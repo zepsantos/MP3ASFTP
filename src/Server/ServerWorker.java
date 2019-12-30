@@ -1,3 +1,11 @@
+package Server;
+
+import MessageTypes.Message;
+import MessageTypes.MessageAuthentication;
+import MessageTypes.MessageTypes;
+import MessageTypes.ResponseMessage;
+import Models.User;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
@@ -9,7 +17,7 @@ public class ServerWorker implements Runnable {
     private BufferedWriter out;
     private App app;
     private User user;
-    public ServerWorker(Socket socket,App app) {
+    public ServerWorker(Socket socket, App app) {
         try {
             this.socket = socket;
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -20,9 +28,9 @@ public class ServerWorker implements Runnable {
         }
     }
 
-    public void write(String msg) {
+    private void write(Message msg) {
         try {
-            this.out.write(msg);
+            this.out.write(msg.toString());
             this.out.newLine();
             this.out.flush();
         } catch (Exception e) {
@@ -47,46 +55,52 @@ public class ServerWorker implements Runnable {
             boolean repeat = true;
             String username = null;
             String password = null;
-            while ((op = this.in.readLine()) != null) {
-                switch(op) {
+            op = this.in.readLine();
+            if(op != null) {
+                ResponseMessage responseMessage = new ResponseMessage(op);
+                switch (responseMessage.getResponse()) {
                     case "register":
                         do {
-                            username = this.in.readLine();
-                            password = this.in.readLine();
+                            MessageAuthentication messageAuthentication = new MessageAuthentication(this.in.readLine());
+                            username = messageAuthentication.getUser();
+                            password = messageAuthentication.getPassword();
                             if (app.registerUser(username, password)) {
-                                write("registered");
                                 user = app.loginUser(username, password);
+                                write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "registered"));
                                 repeat = false;
                             } else
-                                write("not registered");
-                        } while(repeat);
+                                write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "not registered"));
+                        } while (repeat);
                         break;
                     case "login":
                         do {
-                            username = this.in.readLine();
-                            password = this.in.readLine();
-                            if ((user = app.loginUser(username, password)) != null) {
-                                write("login done");
+                            MessageAuthentication messageAuthentication = new MessageAuthentication(this.in.readLine());
+                            if ((user = app.loginUser(messageAuthentication.getUser(), messageAuthentication.getPassword())) != null) {
+                                write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "login done"));
                                 repeat = false;
                             } else {
-                                write("login unsuccessful");
-                                op = "login";
+                                write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "login unsuccessful"));
                             }
-                        }while(repeat);
+                        } while (repeat);
+                        break;
+                    case "music upload":
+
                         break;
                     case "logout":
-                        this.app.logout(user.getUsername());
+                        this.app.logout(responseMessage.getUserID());
                         break;
                 }
             }
         } catch (IOException ioe) {
             try {
-                System.out.println("Worker-" + Thread.currentThread().getId() + " > Client disconnected. Connection is closed.");
+                System.out.println("Worker-" + Thread.currentThread().getId() + " > Client.Client disconnected. Connection is closed.");
                 close();
             } catch (Exception e) {
                 System.out.println("ERROR2: " + e.getMessage());
                 e.printStackTrace();
             }
+        } finally {
+            close();
         }
 
 

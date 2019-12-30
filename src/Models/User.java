@@ -1,12 +1,18 @@
-import java.util.concurrent.locks.ReentrantLock;
+package Models;
+
+
 
 public class User {
     private String username,password;
-    private ReentrantLock lock;
+    private int id;
     public User(String username,String password) {
         this.username = username;
         this.password = password;
-        this.lock = new ReentrantLock();
+        this.id = -1;
+    }
+
+    public void updateInt(int loginID) {
+        this.id = loginID;
     }
 
     public String getUsername() {
@@ -24,24 +30,8 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-
-    public ReentrantLock getLock() {
-        return lock;
+    public int getID() {
+        return this.id;
     }
 
-    public void setLock(ReentrantLock lock) {
-        this.lock = lock;
-    }
-
-    public void lockUser() {
-        this.lock.lock();
-    }
-
-    public void unlockUser() {
-        this.lock.unlock();
-    }
-
-    public boolean isLocked() {
-        return this.lock.isLocked();
-    }
 }
