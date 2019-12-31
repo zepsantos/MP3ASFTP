@@ -15,9 +15,10 @@ public class MessageAuthentication implements Message {
         }
 
         public MessageAuthentication(String request) {
-            Pattern  pattern = Pattern.compile("\\[(.*)\\](.*);(.*)");
+            Pattern  pattern = Pattern.compile("\\[(.*)](.*);(.*)");
             Matcher match = pattern.matcher(request);
             if(match.matches()) {
+                this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.user = match.group(2);
                 this.password = match.group(3);
             } //TODO: throw exception

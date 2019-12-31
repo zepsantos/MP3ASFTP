@@ -5,6 +5,7 @@ import MessageTypes.Message;
 import MessageTypes.MessageAuthentication;
 import MessageTypes.MessageTypes;
 import MessageTypes.ResponseMessage;
+import MessageTypes.MP3Upload;
 
 import java.io.*;
 import java.net.Socket;
@@ -101,24 +102,26 @@ public class Client {
             String op = null;
             welcomeMenu();
             while (!quit && (op = this.systemIn.readLine()) != null) {
-                connectServer();
+
                 switch (op) {
                     case "1":
-                        write(new ResponseMessage(MessageTypes.ResponseMessage,-1,"register"));
+                        connectServer();
                         System.out.println("--------- Register ---------");
                         userCycle("registered","Models.User already registered", MessageTypes.Register);
+                        close();
                         appStart();
                         break;
                     case "2":
-                        write(new ResponseMessage(MessageTypes.ResponseMessage,-1,"login"));
+                        connectServer();
                         System.out.println("------ Login -------");
                         userCycle("login done","Models.User logged in or not found",MessageTypes.Login);
+                        close();
                         appStart();
                         break;
                     default:
                         break;
                 }
-                close();
+
             }
         }catch(IOException e ) {
             e.printStackTrace();
@@ -156,24 +159,56 @@ public class Client {
             while(!quit) {
                 appMenu();
                 while(!quit && (keyboard = this.systemIn.readLine()) != null) {
-                    connectServer();
+
                     switch(keyboard) {
                         case "1":
+                            connectServer();
+                            String mp3FileName = chooseMp3File();
+                            MP3Upload mp3Message = new MP3Upload(userID,mp3FileName);
+                            write(mp3Message);
+                            uploadMP3(mp3FileName); //TODO : RESPOSTA DE VOLTA DE FICHEIRO JA TERMINADO
+                            close();
                             break;
                         case "4":
+                            connectServer();
                             write(new ResponseMessage(MessageTypes.ResponseMessage,userID,"logout"));
                             quit = true;
+                            close();
                             break;
                         default:
                             break;
                     }
-                    close();
+                    appMenu();
                 }
             }
             welcomeMenu();
         } catch(IOException ioe) {
             ioe.printStackTrace();
         }
+    }
+
+    private void uploadMP3(String mp3FileName) {
+        try {
+            File tmp = new File(mp3FileName);
+            byte[] myFileInBytes = new byte[(int) tmp.length()];
+            FileInputStream fis = new FileInputStream(tmp);
+            BufferedInputStream bis = new BufferedInputStream(fis);
+            bis.read(myFileInBytes,0,myFileInBytes.length);
+            OutputStream os = socket.getOutputStream();
+            os.write(myFileInBytes.length);
+            os.write(myFileInBytes,0,myFileInBytes.length);
+            os.flush();
+            bis.close();
+            os.close();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private String chooseMp3File() throws IOException {
+        System.out.println("Insira o path do ficheiro: ");
+        return this.systemIn.readLine();
     }
 
 }

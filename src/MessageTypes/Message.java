@@ -9,7 +9,7 @@ public interface Message {
         } else {
             messageType = header;
         }
-        return MessageTypes.valueOf(messageType);
+        return MessageTypes.fromInt(Integer.parseInt(messageType));
 
     }
 }
