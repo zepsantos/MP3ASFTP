@@ -1,8 +1,11 @@
 package Server;
 
+import MessageTypes.Message;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,9 +15,13 @@ public class Server {
     private int port;
     private App app;
     private ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private PriorityQueue<Message> messageQueue;
+
     public Server(int port) {
         this.port = port;
         app = new App();
+        messageQueue = new PriorityQueue<>();
+
     }
 
     private void startServer() {
