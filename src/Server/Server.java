@@ -31,7 +31,7 @@ public class Server {
             while(true) {
                 System.out.println("Waiting for connection...");
                 Socket socket=serverSocket.accept();
-                System.out.println("Client.Client connected. Starting thread.");
+                System.out.println("Client connected. Starting thread.");
                 ServerWorker serverWorker = new ServerWorker(socket,app);
                 executorService.submit(serverWorker);
             }
