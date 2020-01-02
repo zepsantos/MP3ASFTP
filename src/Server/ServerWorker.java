@@ -10,17 +10,19 @@ import Models.User;
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
+import java.util.logging.Logger;
 
-import static MessageTypes.MessageTypes.MP3Upload;
 
 public class ServerWorker implements Runnable {
 
+    private final static Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     private MessageConnection messageConnection;
     private Socket socket;
     private BufferedReader in;
     private BufferedWriter out;
     private App app;
     private User user;
+
     public ServerWorker(MessageConnection messageConnection) {
         try {
             this.messageConnection = messageConnection;
@@ -73,6 +75,7 @@ public class ServerWorker implements Runnable {
                         break;
                     case ResponseMessage:
                         ResponseMessage responseMessage = (ResponseMessage) messageConnection.getMessage();
+                        log.info(responseMessage.getUserID() + " logged out");
                         this.app.logout(responseMessage.getUserID());
                         break;
                 }
@@ -92,12 +95,15 @@ public class ServerWorker implements Runnable {
                 if (app.registerUser(username, password)) {
                     user = app.loginUser(username, password);
                     write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "registered"));
+                    log.info(username + " registered");
                     repeat = false;
-                } else
+                } else {
                     write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "not registered"));
+                }
             } else {
                 if((user = app.loginUser(username,password)) != null) {
                     write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "login done"));
+                    log.info(username + " logged in with id: " + user.getID());
                     repeat = false;
                 } else {
                     write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "login unsuccessful"));
@@ -112,8 +118,8 @@ public class ServerWorker implements Runnable {
             MP3Upload mp3Upload = (MP3Upload)getMessageConnection().getMessage();
             DataInputStream dis = new DataInputStream(this.socket.getInputStream());
             BufferedInputStream input = new BufferedInputStream(dis);
-            System.out.println("NOME DO FICHEIRO: " + mp3Upload.getFileName());
-            OutputStream outputFile = new FileOutputStream("uploaded"); //TODO : DAR UPLOAD COM NOME
+            log.info("Upload music: " + mp3Upload.getFileName());
+            OutputStream outputFile = new FileOutputStream("uploaded_" + mp3Upload.getFileName()); //TODO : DAR UPLOAD COM NOME
             long size = dis.readLong();
             int bytesRead = 0;
             byte[] buffer = new byte[1024];

@@ -19,6 +19,7 @@ public class Client {
     private String username;
     private String hostname;
     private int port;
+    private Thread notificationThread;
 
     public Client(String hostname, int port) {
         this.hostname = hostname;
@@ -127,6 +128,9 @@ public class Client {
             e.printStackTrace();
         }
     }
+
+
+
     private void userCycle(String flag,String warning,MessageTypes type) {
         try {
             ResponseMessage response = null;
@@ -174,6 +178,7 @@ public class Client {
                             connectServer();
                             write(new ResponseMessage(MessageTypes.ResponseMessage,userID,"logout"));
                             quit = true;
+                            notificationThread.interrupt();
                             close();
                             break;
                         default:
@@ -192,11 +197,11 @@ public class Client {
         ClientNotification clientNotification = new ClientNotification(new NotificationListener() {
             @Override
             public void showMusicUploadNotification(MusicUploadNotification musicUploadNotification) {
-                System.out.println(musicUploadNotification.toString());
+                //System.out.println(musicUploadNotification.toString());
             }
         },hostname,port,userID);
-        Thread t = new Thread(clientNotification);
-        t.start();
+        notificationThread = new Thread(clientNotification);
+        notificationThread.start();
 
     }
 

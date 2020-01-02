@@ -7,8 +7,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.*;
+import java.util.logging.*;
 
 
 public class Server {
@@ -16,6 +18,7 @@ public class Server {
     private int port;
     private App app;
     private ThreadPoolExecutor threadPoolExecutor;
+    private final static Logger  log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public Server(int port) {
         this.port = port;
@@ -26,27 +29,46 @@ public class Server {
                 threadPoolExecutor.execute(runnable);
             }
         });
+        log.setLevel(Level.ALL);
+        log.setUseParentHandlers(false);
+        ConsoleHandler ch = new ConsoleHandler();
+        ch.setFormatter(new SimpleFormatter() {
+
+            private static final String format = "[%1$tF %1$tT] [%2$-7s] %3$s %n";
+
+            @Override
+            public synchronized String format(LogRecord lr) {
+                return String.format(format,
+                        new Date(lr.getMillis()),
+                        lr.getLevel().getLocalizedName(),
+                        lr.getMessage()
+
+                );
+        }});
+        log.addHandler(ch);
     }
 
     private void startServer() {
         try {
-            System.out.println("####### SERVER #######");
+            log.info("Server inicializing...");
             this.serverSocket = new ServerSocket(this.port);
+            log.info("Waiting for Connection");
             while(true) {
-                System.out.println("Waiting for connection...");
                 Socket socket=serverSocket.accept();
-                System.out.println("Client connected. Starting thread.");
                 String op = null;
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 op = in.readLine();
                 if(op != null) { //TODO: substituir por while caso queiramos passar mais do que uma mensagem
                     Message tmp = getMessageObject(op);
-                    if (tmp.isValidMessage())
-                        if(tmp instanceof Notification) {
 
+                    if (tmp.isValidMessage()) {
+                        log.fine(new StringBuilder().append("Message Type: ").append(tmp.getMessageType().toString()).append(" received from ").append(socket.getInetAddress().getHostAddress()).toString());
+                        if (tmp instanceof Notification) {
+                            socket.close();
                         } else {
-                            threadPoolExecutor.execute(new ServerWorkerFutureTask(new ServerWorker(new MessageConnection(tmp,socket))));
+                            threadPoolExecutor.execute(new ServerWorkerFutureTask(new ServerWorker(new MessageConnection(tmp, socket))));
                         }
+                    }
                     }
                 }
 
@@ -77,11 +99,5 @@ public class Server {
 
     }
 
-   /* private void teste() {
 
-        ServerWorker serverWorker = new ServerWorker(Objects.requireNonNull(messageQueue.poll()),app);
-        executorService.submit(serverWorker);
-
-
-    } */
 }

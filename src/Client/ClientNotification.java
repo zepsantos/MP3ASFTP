@@ -1,13 +1,16 @@
 package Client;
 
 import MessageTypes.Message;
+import MessageTypes.MessageTypes;
 import MessageTypes.Notification;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ClientNotification implements Runnable {
-    NotificationListener listener;
+    private NotificationListener listener;
+    private AtomicBoolean running = new AtomicBoolean(false);
     private Socket socket;
     private BufferedReader in;
     private BufferedWriter out;
@@ -66,23 +69,25 @@ public class ClientNotification implements Runnable {
         }
     }
 
+
     @Override
     public void run() {
-        connectServer();
-        write(new Notification(userID));
-        try {
-            Notification notification = new Notification(this.in.readLine());
-            MusicUploadNotification musicUploadNotification = new MusicUploadNotification();
-            listener.showMusicUploadNotification(musicUploadNotification);
-        } catch (IOException e) {
-            e.printStackTrace();
+        running.set(true);
+        while(running.get()) {
+            connectServer();
+            write(new Notification(MessageTypes.Notification, userID));
+            try {
+                Notification notification = new Notification(this.in.readLine());
+                MusicUploadNotification musicUploadNotification = new MusicUploadNotification();
+                listener.showMusicUploadNotification(musicUploadNotification);
+            } catch (IOException e) {
+            }
+            close();
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                running.set(false);
+            }
         }
-        close();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
     }
 }
