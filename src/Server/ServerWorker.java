@@ -20,6 +20,7 @@ public class ServerWorker implements Runnable {
     private BufferedWriter out;
     private App app;
     private User user;
+
     public ServerWorker(Socket socket, App app) {
         try {
             this.socket = socket;

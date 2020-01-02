@@ -158,6 +158,7 @@ public class Client {
             String keyboard = null;
             while(!quit) {
                 appMenu();
+                listenForNotifications();
                 while(!quit && (keyboard = this.systemIn.readLine()) != null) {
 
                     switch(keyboard) {
@@ -185,6 +186,18 @@ public class Client {
         } catch(IOException ioe) {
             ioe.printStackTrace();
         }
+    }
+
+    private void listenForNotifications() {
+        ClientNotification clientNotification = new ClientNotification(new NotificationListener() {
+            @Override
+            public void showMusicUploadNotification(MusicUploadNotification musicUploadNotification) {
+                System.out.println(musicUploadNotification.toString());
+            }
+        },hostname,port,userID);
+        Thread t = new Thread(clientNotification);
+        t.start();
+
     }
 
     private void uploadMP3(String mp3FileName) {
