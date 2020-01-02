@@ -1,5 +1,51 @@
 package MessageTypes;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Notification implements Message {
+    private int userID;
+    private MessageTypes type;
+    private boolean validMessage = true;
+    public Notification(MessageTypes type,int user) {
+        this.type = type;
+        this.userID = user;
+    }
+
+    public Notification(String request) {
+        if(request != null) {
+            Pattern pattern = Pattern.compile("\\[(.*);(.*)]");
+            Matcher match = pattern.matcher(request);
+            if (match.matches()) {
+                this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
+                this.userID = Integer.parseInt(match.group(2));
+            } //TODO: throw exception
+        } else {
+            validMessage = false;
+        }
+    }
+
+    public int getUserID() {
+        return userID;
+    }
+
+    public boolean isValidMessage() {
+        return validMessage;
+    }
+
+    @Override
+    public MessageTypes getMessageType() {
+        return type;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("[");
+        sb.append(type.getType());
+        sb.append(";");
+        sb.append(getUserID());
+        sb.append("]");
+        return sb.toString();
+    }
 
 }

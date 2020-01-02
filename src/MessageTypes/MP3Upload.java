@@ -7,6 +7,7 @@ public class MP3Upload  implements  Message{
     private int idUser;
     private MessageTypes type;
     private String fileName;
+    private boolean validMessage = true;
     public MP3Upload(int idUser,String fileName) {
         this.type = MessageTypes.MP3Upload;
         this.idUser = idUser;
@@ -20,7 +21,9 @@ public class MP3Upload  implements  Message{
             this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
             this.idUser = Integer.parseInt(match.group(2));
             this.fileName = match.group(3);
-        } //TODO: throw exception
+        } else {
+            validMessage = false;
+        }
     }
 
     public String getFileName() {
@@ -40,5 +43,15 @@ public class MP3Upload  implements  Message{
         sb.append("]");
         sb.append(fileName);
         return sb.toString();
+    }
+
+    @Override
+    public MessageTypes getMessageType() {
+        return type;
+    }
+
+    @Override
+    public boolean isValidMessage() {
+        return this.validMessage;
     }
 }

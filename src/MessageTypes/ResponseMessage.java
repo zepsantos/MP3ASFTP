@@ -9,7 +9,7 @@ public class ResponseMessage implements Message {
     private int userID;
     private String response;
     private MessageTypes type;
-
+    private boolean validMessage = true;
     public ResponseMessage(MessageTypes type,int user,String response) {
         this.type = type;
         this.userID = user;
@@ -24,9 +24,11 @@ public class ResponseMessage implements Message {
                 this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.userID = Integer.parseInt(match.group(2));
                 this.response = match.group(3);
-            } //TODO: throw exception
+            } else {
+                validMessage = false;//TODO: throw exception
+            }
         } else {
-            this.response = "";
+            validMessage = false;
         }
     }
 
@@ -47,5 +49,15 @@ public class ResponseMessage implements Message {
         sb.append("]");
         sb.append(response);
         return sb.toString();
+    }
+
+    @Override
+    public MessageTypes getMessageType() {
+        return type;
+    }
+
+    @Override
+    public boolean isValidMessage() {
+        return this.validMessage;
     }
 }

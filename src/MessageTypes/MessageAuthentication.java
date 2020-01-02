@@ -7,7 +7,7 @@ public class MessageAuthentication implements Message {
         private String user;
         private String password;
         private MessageTypes type;
-
+        private boolean validMessage = true;
         public MessageAuthentication(MessageTypes type, String user, String password) {
             this.type = type;
             this.user = user;
@@ -21,7 +21,9 @@ public class MessageAuthentication implements Message {
                 this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.user = match.group(2);
                 this.password = match.group(3);
-            } //TODO: throw exception
+            } else { //TODO: throw exception
+                validMessage = false;
+            }
         }
 
     public String getUser() {
@@ -41,5 +43,15 @@ public class MessageAuthentication implements Message {
         sb.append(";");
         sb.append(password);
         return sb.toString();
+    }
+
+
+    public MessageTypes getMessageType() {
+        return type;
+    }
+
+    @Override
+    public boolean isValidMessage() {
+        return this.validMessage;
     }
 }
