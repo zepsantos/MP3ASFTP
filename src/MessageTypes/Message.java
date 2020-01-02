@@ -12,4 +12,7 @@ public interface Message {
         return MessageTypes.fromInt(Integer.parseInt(messageType));
 
     }
+
+    MessageTypes getMessageType();
+    boolean isValidMessage();
 }

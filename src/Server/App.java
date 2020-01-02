@@ -1,5 +1,6 @@
 package Server;
 
+import Models.MusicDatabase;
 import Models.User;
 
 import java.util.HashMap;
@@ -9,14 +10,22 @@ public class App {
     private HashMap<String, User> users;
     private HashMap<Integer, User> usersByIDSession;
     private AtomicInteger lastID;
+    private MusicDatabase musicDatabase;
+    private static App inst = null;
+
     public App() {
         users = new HashMap<>();
         usersByIDSession = new HashMap<>();
         lastID = new AtomicInteger();
+        musicDatabase = MusicDatabase.getInstance();
     }
 
+    public static App getInstance() {
+        if(inst == null) inst = new App();
+        return inst;
+    }
 
-    public   boolean registerUser(String username,String password) {
+    public boolean registerUser(String username, String password) {
         if(!this.users.containsKey(username)) {
             User user = new User(username,password);
             users.put(username,user);

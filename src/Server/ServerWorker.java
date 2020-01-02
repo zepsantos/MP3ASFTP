@@ -15,21 +15,26 @@ import static MessageTypes.MessageTypes.MP3Upload;
 
 public class ServerWorker implements Runnable {
 
+    private MessageConnection messageConnection;
     private Socket socket;
     private BufferedReader in;
     private BufferedWriter out;
     private App app;
     private User user;
-
-    public ServerWorker(Socket socket, App app) {
+    public ServerWorker(MessageConnection messageConnection) {
         try {
-            this.socket = socket;
+            this.messageConnection = messageConnection;
+            this.socket = messageConnection.getSocket();
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.app = app;
+            this.app = App.getInstance();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public MessageConnection getMessageConnection() {
+        return messageConnection;
     }
 
     private void write(Message msg) {
@@ -56,45 +61,31 @@ public class ServerWorker implements Runnable {
 
     @Override
     public void run() {
-        try {
-            String op = null;
-            op = this.in.readLine();
-            if(op != null) {
-                MessageTypes type = Message.getMessageType(op);
+
+                MessageTypes type = messageConnection.getMessage().getMessageType();
                 switch (type) {
                     case Register:
                     case Login:
-                        authenticationProcess(op,type);
+                        authenticationProcess(type);
                         break;
                     case MP3Upload:
-                        mp3BeginUpload(op);
+                        mp3BeginUpload();
                         break;
                     case ResponseMessage:
-                        ResponseMessage responseMessage = new ResponseMessage(op);
+                        ResponseMessage responseMessage = (ResponseMessage) messageConnection.getMessage();
                         this.app.logout(responseMessage.getUserID());
                         break;
                 }
-            }
-        } catch (IOException ioe) {
-            try {
-                System.out.println("Worker-" + Thread.currentThread().getId() + " > Client disconnected. Connection is closed.");
-            } catch (Exception e) {
-                System.out.println("ERROR2: " + e.getMessage());
-                e.printStackTrace();
-            }
-        } finally {
-            close();
-        }
-
+                close();
 
     }
 
-    private void authenticationProcess(String message,MessageTypes type) {
+    private void authenticationProcess(MessageTypes type) {
         boolean repeat = true;
         String username = null;
         String password = null;
         do {
-            MessageAuthentication messageAuthentication = new MessageAuthentication(message);
+            MessageAuthentication messageAuthentication = (MessageAuthentication)messageConnection.getMessage();
             username = messageAuthentication.getUser();
             password = messageAuthentication.getPassword();
             if(type == MessageTypes.Register ) {
@@ -116,9 +107,9 @@ public class ServerWorker implements Runnable {
         } while (repeat);
     }
 
-    private void mp3BeginUpload(String message) {
+    private void mp3BeginUpload() {
         try {
-            MP3Upload mp3Upload = new MP3Upload(message);
+            MP3Upload mp3Upload = (MP3Upload)getMessageConnection().getMessage();
             DataInputStream dis = new DataInputStream(this.socket.getInputStream());
             BufferedInputStream input = new BufferedInputStream(dis);
             System.out.println("NOME DO FICHEIRO: " + mp3Upload.getFileName());

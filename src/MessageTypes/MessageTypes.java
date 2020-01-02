@@ -16,23 +16,6 @@ public enum MessageTypes {
         return null;
     }
 
-    public Class<? extends Message>  getClassFromType() {
-        switch(getType()) {
-            case 1:
-            case 2:
-                return MessageAuthentication.class;
-            case 3:
-                return ResponseMessage.class;
-            case 4:
-                return MP3Upload.class;
-            case 5:
-                return Notification.class;
-                default:
-                break;
-
-        }
-        return null;
-    }
 
     public int getType() {
         return type;

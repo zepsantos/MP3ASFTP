@@ -1,14 +1,18 @@
 package Models;
 
 
+import java.util.ArrayList;
+import java.util.List;
 
 public class User {
     private String username,password;
     private int id;
+    private List<Music> myMusicList;
     public User(String username,String password) {
         this.username = username;
         this.password = password;
         this.id = -1;
+        myMusicList = new ArrayList<>();
     }
 
     public void updateInt(int loginID) {

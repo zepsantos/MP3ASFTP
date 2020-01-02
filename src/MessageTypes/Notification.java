@@ -4,28 +4,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Notification implements Message {
-    private int idUser;
+    private int userID;
     private MessageTypes type;
-
-    public Notification(int idUser) {
-        this.type = MessageTypes.Notification;
-        this.idUser = idUser;
+    private boolean validMessage = true;
+    public Notification(MessageTypes type,int user) {
+        this.type = type;
+        this.userID = user;
     }
 
     public Notification(String request) {
-        Pattern pattern = Pattern.compile("\\[(.*);(.*)]");
-        Matcher match = pattern.matcher(request);
-        if(match.matches()) {
-            this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
-            this.idUser = Integer.parseInt(match.group(2));
-
-        } //TODO: throw exception
+        if(request != null) {
+            Pattern pattern = Pattern.compile("\\[(.*);(.*)]");
+            Matcher match = pattern.matcher(request);
+            if (match.matches()) {
+                this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
+                this.userID = Integer.parseInt(match.group(2));
+            } //TODO: throw exception
+        } else {
+            validMessage = false;
+        }
     }
 
+    public int getUserID() {
+        return userID;
+    }
 
+    public boolean isValidMessage() {
+        return validMessage;
+    }
 
-    public int getIdUser() {
-        return idUser;
+    @Override
+    public MessageTypes getMessageType() {
+        return type;
     }
 
     @Override
@@ -33,8 +43,9 @@ public class Notification implements Message {
         StringBuilder sb = new StringBuilder("[");
         sb.append(type.getType());
         sb.append(";");
-        sb.append(idUser);
+        sb.append(getUserID());
         sb.append("]");
         return sb.toString();
     }
+
 }
