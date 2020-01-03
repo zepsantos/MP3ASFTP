@@ -6,7 +6,9 @@ import MessageTypes.MessageAuthentication;
 import MessageTypes.MessageTypes;
 import MessageTypes.ResponseMessage;
 import MessageTypes.MP3Upload;
+import Models.Music;
 
+import javax.imageio.IIOException;
 import java.io.*;
 import java.net.Socket;
 
@@ -89,7 +91,7 @@ public class Client {
 
     public void appMenu() {
         System.out.print("\033[H\033[2J");
-        System.out.println("--------- Welcome " + this.username + " ---------");
+        System.out.println("--------- Welcome " + this.username + " with id " + this.userID + " ---------");
         System.out.println(" [1] Upload da Musica");
         System.out.println(" [4] Logout");
         System.out.println("--------------------------");
@@ -108,14 +110,14 @@ public class Client {
                     case "1":
                         connectServer();
                         System.out.println("--------- Register ---------");
-                        userCycle("registered","Models.User already registered", MessageTypes.Register);
+                        userCycle("registered","User already registered", MessageTypes.Register);
                         close();
                         appStart();
                         break;
                     case "2":
                         connectServer();
                         System.out.println("------ Login -------");
-                        userCycle("login done","Models.User logged in or not found",MessageTypes.Login);
+                        userCycle("login done","User not found",MessageTypes.Login);
                         close();
                         appStart();
                         break;
@@ -160,23 +162,27 @@ public class Client {
         try {
             boolean quit = false;
             String keyboard = null;
+            listenForNotifications();
             while(!quit) {
                 appMenu();
-                listenForNotifications();
                 while(!quit && (keyboard = this.systemIn.readLine()) != null) {
-
+                    appMenu();
                     switch(keyboard) {
                         case "1":
                             connectServer();
                             String mp3FileName = chooseMp3File();
-                            MP3Upload mp3Message = new MP3Upload(userID,mp3FileName);
-                            write(mp3Message);
-                            uploadMP3(mp3FileName); //TODO : RESPOSTA DE VOLTA DE FICHEIRO JA TERMINADO
+                            Music music = getMusicInfoFromUser();
+                            music.setFilePath(mp3FileName);
+                            if(music != null) {
+                                MP3Upload mp3Message = new MP3Upload(userID, music);
+                                write(mp3Message);
+                                uploadMP3(mp3FileName);
+                            }
                             close();
                             break;
                         case "4":
                             connectServer();
-                            write(new ResponseMessage(MessageTypes.ResponseMessage,userID,"logout"));
+                            write(new ResponseMessage(userID,"logout"));
                             quit = true;
                             notificationThread.interrupt();
                             close();
@@ -195,8 +201,8 @@ public class Client {
     private void listenForNotifications() {
         ClientNotification clientNotification = new ClientNotification(new NotificationListener() {
             @Override
-            public void showMusicUploadNotification(MusicUploadNotification musicUploadNotification) {
-                //System.out.println(musicUploadNotification.toString());
+            public void showMusicUploadNotification(String notification) {
+                System.out.println(notification);
             }
         },hostname,port,userID);
         notificationThread = new Thread(clientNotification);
@@ -223,10 +229,33 @@ public class Client {
 
     }
 
+    private Music getMusicInfoFromUser() {
+        try {
+            System.out.println("Insira o nome da musica: ");
+            String title = this.systemIn.readLine();
+            System.out.println("Insira o nome do artista: ");
+            String artist = this.systemIn.readLine();
+            System.out.println("Insira o ano da musica: ");
+            String year = this.systemIn.readLine();
+            System.out.println("Insira as tags da musica (separado por ;) : ");
+            String tagString = this.systemIn.readLine();
+            Music tmp = new Music(title,artist,year,null);
+            String[] tags = tagString.split(";"); //TODO: PODE ESTOURAR
+            for(String s : tags) tmp.addTag(s);
+            return tmp;
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     private String chooseMp3File() throws IOException {
         System.out.println("Insira o path do ficheiro: ");
         return this.systemIn.readLine();
     }
+
+
 
 }
 

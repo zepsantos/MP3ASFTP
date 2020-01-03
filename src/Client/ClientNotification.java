@@ -1,8 +1,6 @@
 package Client;
 
-import MessageTypes.Message;
-import MessageTypes.MessageTypes;
-import MessageTypes.Notification;
+import MessageTypes.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -23,15 +21,6 @@ public class ClientNotification implements Runnable {
         this.hostname = hostname;
         this.port = port;
         this.userID = userID;
-    }
-    private void connectServer() {
-        if(this.socket == null) {
-            connectSocket();
-            return;
-        }
-        if(!this.socket.isConnected()) {
-            connectSocket();
-        }
     }
 
     private void close() {
@@ -72,22 +61,29 @@ public class ClientNotification implements Runnable {
 
     @Override
     public void run() {
+        connectSocket();
+        write(new Notification(userID));
         running.set(true);
         while(running.get()) {
-            connectServer();
-            write(new Notification(MessageTypes.Notification, userID));
             try {
-                Notification notification = new Notification(this.in.readLine());
-                MusicUploadNotification musicUploadNotification = new MusicUploadNotification();
-                listener.showMusicUploadNotification(musicUploadNotification);
+                if(!this.in.ready()) {
+                    try {
+                        Thread.sleep(1000);
+                    }catch (InterruptedException e) {
+                        running.set(false);
+                        close();
+                    }
+                }
+                ResponseMessage notification = new ResponseMessage(this.in.readLine());
+                StringBuilder sb = new StringBuilder("O utilizador ");
+                sb.append(notification.getUserID());
+                sb.append(" fez upload da musica ");
+                sb.append(notification.getResponse());
+                listener.showMusicUploadNotification(sb.toString());
             } catch (IOException e) {
-            }
-            close();
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                running.set(false);
+                e.printStackTrace();
             }
         }
+       close();
     }
 }

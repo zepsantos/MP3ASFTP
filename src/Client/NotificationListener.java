@@ -1,5 +1,5 @@
 package Client;
 
 public interface NotificationListener {
-    public void showMusicUploadNotification(MusicUploadNotification musicUploadNotification);
+    public void showMusicUploadNotification(String notification);
 }

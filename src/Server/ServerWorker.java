@@ -5,6 +5,7 @@ import MessageTypes.MessageAuthentication;
 import MessageTypes.MessageTypes;
 import MessageTypes.MP3Upload;
 import MessageTypes.ResponseMessage;
+import Models.Music;
 import Models.User;
 
 import java.io.*;
@@ -94,19 +95,19 @@ public class ServerWorker implements Runnable {
             if(type == MessageTypes.Register ) {
                 if (app.registerUser(username, password)) {
                     user = app.loginUser(username, password);
-                    write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "registered"));
+                    write(new ResponseMessage( user.getID(), "registered"));
                     log.info(username + " registered");
                     repeat = false;
                 } else {
-                    write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "not registered"));
+                    write(new ResponseMessage( -1, "not registered"));
                 }
             } else {
                 if((user = app.loginUser(username,password)) != null) {
-                    write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "login done"));
+                    write(new ResponseMessage( user.getID(), "login done"));
                     log.info(username + " logged in with id: " + user.getID());
                     repeat = false;
                 } else {
-                    write(new ResponseMessage(MessageTypes.ResponseMessage, -1, "login unsuccessful"));
+                    write(new ResponseMessage( -1, "login unsuccessful"));
                 }
 
             }
@@ -119,7 +120,7 @@ public class ServerWorker implements Runnable {
             DataInputStream dis = new DataInputStream(this.socket.getInputStream());
             BufferedInputStream input = new BufferedInputStream(dis);
             log.info("Upload music: " + mp3Upload.getFileName());
-            OutputStream outputFile = new FileOutputStream("uploaded_" + mp3Upload.getFileName()); //TODO : DAR UPLOAD COM NOME
+            OutputStream outputFile = new FileOutputStream(mp3Upload.getFileName()); //TODO : DAR UPLOAD COM NOME
             long size = dis.readLong();
             int bytesRead = 0;
             byte[] buffer = new byte[1024];
@@ -127,6 +128,7 @@ public class ServerWorker implements Runnable {
                 outputFile.write(buffer, 0, bytesRead);
                 size -= bytesRead;
             }
+            app.uploadMusic((Music)mp3Upload.getMusic().clone());
             outputFile.close();
             dis.close();
         }catch(IOException e) {
@@ -134,4 +136,5 @@ public class ServerWorker implements Runnable {
         }
 
     }
+
 }

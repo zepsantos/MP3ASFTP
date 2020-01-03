@@ -1,28 +1,29 @@
 package Server;
 
 import MessageTypes.*;
+import Models.Music;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.logging.*;
 
 
-public class Server {
+public class Server implements NotificationAvailableListener {
     private ServerSocket serverSocket;
     private int port;
-    private App app;
     private ThreadPoolExecutor threadPoolExecutor;
+    private List<MessageConnection> connectionList;
     private final static Logger  log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
     public Server(int port) {
         this.port = port;
-        app = App.getInstance();
+        connectionList = new ArrayList<>();
         threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
             @Override
             public void rejectedExecution(Runnable runnable, ThreadPoolExecutor threadPoolExecutor) {
@@ -49,6 +50,7 @@ public class Server {
     }
 
     private void startServer() {
+        App.getInstance().setNotificationListener(this);
         try {
             log.info("Server inicializing...");
             this.serverSocket = new ServerSocket(this.port);
@@ -62,9 +64,10 @@ public class Server {
                     Message tmp = getMessageObject(op);
 
                     if (tmp.isValidMessage()) {
-                        log.fine(new StringBuilder().append("Message Type: ").append(tmp.getMessageType().toString()).append(" received from ").append(socket.getInetAddress().getHostAddress()).toString());
+                        log.info(new StringBuilder().append("Message Type: ").append(tmp.getMessageType().toString()).append(" received from ").append(socket.getInetAddress().getHostAddress()).toString());
                         if (tmp instanceof Notification) {
-                            socket.close();
+                            log.info("Added to notification broadcast " + socket.getInetAddress().getHostAddress());
+                            this.connectionList.add(new MessageConnection(tmp,socket));
                         } else {
                             threadPoolExecutor.execute(new ServerWorkerFutureTask(new ServerWorker(new MessageConnection(tmp, socket))));
                         }
@@ -97,6 +100,22 @@ public class Server {
         Server server = new Server(12345);
         server.startServer();
 
+    }
+
+    @Override
+    public void broadcastMusicNotification(Music m)  {
+        for(MessageConnection messageConnection : connectionList) {
+            try {
+                BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(messageConnection.getSocket().getOutputStream()));
+                ResponseMessage tmp  = new ResponseMessage(m.getOwnerOfUploadID(),m.getTitle());
+                bw.write(tmp.toString());
+                bw.newLine();
+                bw.flush();
+                log.info("Sending Notification to " + messageConnection.getSocket().getInetAddress().getHostAddress());
+            } catch(IOException e) {
+                log.severe("Failed to send notification to " + messageConnection.getSocket().getInetAddress().getHostAddress());
+            }
+        }
     }
 
 

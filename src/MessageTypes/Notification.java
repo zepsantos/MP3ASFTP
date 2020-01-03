@@ -6,18 +6,24 @@ import java.util.regex.Pattern;
 public class Notification implements Message {
     private int userID;
     private MessageTypes type;
+    private String notification;
     private boolean validMessage = true;
-    public Notification(MessageTypes type,int user) {
-        this.type = type;
+    private Notification(){
+        this.type = MessageTypes.Notification;
+    }
+    public Notification(int user) {
+        this();
         this.userID = user;
     }
 
+
+
     public Notification(String request) {
+        this();
         if(request != null) {
             Pattern pattern = Pattern.compile("\\[(.*);(.*)]");
             Matcher match = pattern.matcher(request);
             if (match.matches()) {
-                this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.userID = Integer.parseInt(match.group(2));
             } //TODO: throw exception
         } else {

@@ -1,5 +1,7 @@
 package Server;
 
+import Client.NotificationListener;
+import Models.Music;
 import Models.MusicDatabase;
 import Models.User;
 
@@ -9,11 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class App {
     private HashMap<String, User> users;
     private HashMap<Integer, User> usersByIDSession;
+    private NotificationAvailableListener notificationListener;
     private AtomicInteger lastID;
     private MusicDatabase musicDatabase;
     private static App inst = null;
 
-    public App() {
+    private App() {
         users = new HashMap<>();
         usersByIDSession = new HashMap<>();
         lastID = new AtomicInteger();
@@ -40,7 +43,7 @@ public class App {
             User user = this.users.get(username);
             if (user.getPassword().equals(password)) {
                 int tmp = lastID.getAndIncrement();
-                user.updateInt(tmp);
+                user.updateLoginID(tmp);
                 this.usersByIDSession.put(tmp,user);
                 return user;
             }
@@ -50,6 +53,20 @@ public class App {
 
     public void  logout(int uid) { //TODO: Ter cuidado com os locks
             this.usersByIDSession.remove(uid);
+    }
+
+    public void setNotificationListener(NotificationAvailableListener notificationListener) {
+        this.notificationListener = notificationListener;
+    }
+
+    public void uploadMusic(Music music) {
+        int tmp = musicDatabase.getLastMusicIDAndIncrement();
+        music.setMusicID(tmp);
+        musicDatabase.put(tmp,music);
+        if(this.notificationListener != null){
+            this.notificationListener.broadcastMusicNotification(music);
+        }
+
     }
 
 
