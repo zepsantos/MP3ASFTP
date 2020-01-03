@@ -40,7 +40,7 @@ public class App {
             User user = this.users.get(username);
             if (user.getPassword().equals(password)) {
                 int tmp = lastID.getAndIncrement();
-                user.updateInt(tmp);
+                user.updateLoginID(tmp);
                 this.usersByIDSession.put(tmp,user); //NAO PRECISA DE LOCK
                 return user;
             }
