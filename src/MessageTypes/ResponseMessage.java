@@ -10,8 +10,8 @@ public class ResponseMessage implements Message {
     private String response;
     private MessageTypes type;
     private boolean validMessage = true;
-    public ResponseMessage(int user,String response) {
-        this.type = MessageTypes.ResponseMessage;
+    public ResponseMessage(MessageTypes type,int user,String response) {
+        this.type = type;
         this.userID = user;
         this.response = response;
     }

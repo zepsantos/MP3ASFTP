@@ -107,7 +107,7 @@ public class Server implements NotificationAvailableListener {
         for(MessageConnection messageConnection : connectionList) {
             try {
                 BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(messageConnection.getSocket().getOutputStream()));
-                ResponseMessage tmp  = new ResponseMessage(m.getOwnerOfUploadID(),m.getTitle());
+                ResponseMessage tmp  = new ResponseMessage(MessageTypes.ResponseMessage,m.getOwnerOfUploadID(),m.getTitle());
                 bw.write(tmp.toString());
                 bw.newLine();
                 bw.flush();

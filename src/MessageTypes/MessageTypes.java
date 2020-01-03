@@ -2,7 +2,7 @@ package MessageTypes;
 
 public enum MessageTypes {
 
-    Login (1) , Register(2), ResponseMessage(3) ,MP3Upload(4),Notification(5);
+    Login (1) , Register(2), ResponseMessage(3) ,MP3Upload(4),Notification(5),MusicList(6);
     int type;
 
     MessageTypes(int type) {

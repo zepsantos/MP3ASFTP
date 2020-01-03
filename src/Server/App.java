@@ -5,8 +5,12 @@ import Models.Music;
 import Models.MusicDatabase;
 import Models.User;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class App {
     private HashMap<String, User> users;
@@ -68,6 +72,10 @@ public class App {
         }
 
     }
+
+    public List<Music> getMusicsList() {
+        return (List<Music>) musicDatabase.values().stream().collect(Collectors.toList());
+}
 
 
 

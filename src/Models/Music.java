@@ -19,11 +19,11 @@ public class Music {
         this.nTimesMusicHasBeenDownloaded = new AtomicInteger();
     }
 
-    public Music (String title, String artist,String year , int musicID,AtomicInteger nTimesMusicHasBeenDownloaded, int ownerOfUploadID ,ArrayList<String> tagsList, String filePath) {
+    public Music (String title, String artist,String year , int musicID,int nTimesMusicHasBeenDownloaded, int ownerOfUploadID ,ArrayList<String> tagsList, String filePath) {
         this.title = title;
         this.artist = artist;
         this.year = year;
-        this.nTimesMusicHasBeenDownloaded = new AtomicInteger(nTimesMusicHasBeenDownloaded.get());
+        this.nTimesMusicHasBeenDownloaded = new AtomicInteger(nTimesMusicHasBeenDownloaded);
         this.musicID = musicID;
         this.filePath = filePath;
         this.ownerOfUploadID = ownerOfUploadID;
@@ -90,6 +90,22 @@ public class Music {
 
     @Override
     public Object clone() {
-        return new Music(getTitle(),getArtist(),getYear(),getMusicID(),this.nTimesMusicHasBeenDownloaded,this.ownerOfUploadID,this.tags,getFilePath());
+        return new Music(getTitle(),getArtist(),getYear(),getMusicID(),this.nTimesMusicHasBeenDownloaded.get(),this.ownerOfUploadID,this.tags,getFilePath());
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("");
+        sb.append(title).append(';');
+        sb.append(artist).append(';');
+        sb.append(year).append(';');
+        sb.append(filePath).append(';');
+        for(String s : this.tags)
+            sb.append(s).append(',');
+        sb.append(';');
+        sb.append(musicID).append(';');
+        sb.append(nTimesMusicHasBeenDownloaded.get()).append(';');
+        sb.append(ownerOfUploadID).append(';');
+        return sb.toString();
     }
 }

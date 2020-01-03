@@ -93,6 +93,7 @@ public class Client {
         System.out.print("\033[H\033[2J");
         System.out.println("--------- Welcome " + this.username + " with id " + this.userID + " ---------");
         System.out.println(" [1] Upload da Musica");
+        System.out.println(" [2] Lista de Musicas");
         System.out.println(" [4] Logout");
         System.out.println("--------------------------");
     }
@@ -180,9 +181,15 @@ public class Client {
                             }
                             close();
                             break;
+                        case "2":
+                            connectServer();
+                            write(new ResponseMessage(MessageTypes.MusicList,userID,"musicList"));
+
+                            close();
+                            break;
                         case "4":
                             connectServer();
-                            write(new ResponseMessage(userID,"logout"));
+                            write(new ResponseMessage(MessageTypes.ResponseMessage,userID,"logout"));
                             quit = true;
                             notificationThread.interrupt();
                             close();
