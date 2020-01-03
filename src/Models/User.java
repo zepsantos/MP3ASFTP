@@ -15,7 +15,7 @@ public class User {
         myMusicList = new ArrayList<>();
     }
 
-    public void updateInt(int loginID) {
+    public void updateLoginID(int loginID) {
         this.id = loginID;
     }
 

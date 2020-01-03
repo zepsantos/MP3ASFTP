@@ -89,7 +89,7 @@ public class Client {
 
     public void appMenu() {
         System.out.print("\033[H\033[2J");
-        System.out.println("---------Welcome " + this.username);
+        System.out.println("--------- Welcome " + this.username + " ---------");
         System.out.println(" [1] Upload da Musica");
         System.out.println(" [4] Logout");
         System.out.println("--------------------------");
@@ -184,7 +184,6 @@ public class Client {
                         default:
                             break;
                     }
-                    appMenu();
                 }
             }
             welcomeMenu();

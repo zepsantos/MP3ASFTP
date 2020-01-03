@@ -45,7 +45,7 @@ public class MusicDatabase extends HashMap<Integer,Music> {
     @Override
     public Music put(Integer key, Music value) {
         value.setMusicID(lastMusicID.getAndIncrement());
-        return super.put(key, value);
+        return super.put(value.getMusicID(), value);
     }
 
     @Override
