@@ -41,7 +41,7 @@ public class App {
             if (user.getPassword().equals(password)) {
                 int tmp = lastID.getAndIncrement();
                 user.updateInt(tmp);
-                this.usersByIDSession.put(tmp,user); //NAO PRECISA DE LOCK
+                this.usersByIDSession.put(tmp,user);
                 return user;
             }
         }
