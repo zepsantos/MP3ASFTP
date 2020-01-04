@@ -3,6 +3,7 @@ package Server;
 import MessageTypes.*;
 
 import Models.Music;
+import Models.MusicDatabase;
 import Models.User;
 
 import java.io.*;
@@ -69,7 +70,14 @@ public class ServerWorker implements Runnable {
                         authenticationProcess(type);
                         break;
                     case MP3Upload:
-                        mp3BeginUpload();
+                        mp3Download();
+                        break;
+                    case MP3Download:
+                        MP3Download mp3Download = (MP3Download) getMessageConnection().getMessage();
+                        Music mtmp = MusicDatabase.getInstance().get(mp3Download.getIdMusic());
+                        if(mtmp == null) return;
+                        write(new ResponseMessage(-1,mtmp.getFilePath()));
+                        mp3Upload(mtmp);
                         break;
                     case ResponseMessage:
                         ResponseMessage responseMessage = (ResponseMessage) messageConnection.getMessage();
@@ -78,7 +86,7 @@ public class ServerWorker implements Runnable {
                         }else if(responseMessage.getResponse().substring(0,9).equals("musicList")){
                             String[] responseTag = responseMessage.getResponse().split(";");
                             if(responseTag.length == 2)
-                            sendMusicList(responseTag[1]);
+                                sendMusicList(responseTag[1]);
                             else
                                 sendMusicList();
                         }
@@ -135,12 +143,38 @@ public class ServerWorker implements Runnable {
         } while (repeat);
     }
 
-    private void mp3BeginUpload() {
+    private void mp3Upload(Music music) {
+        try {
+
+            File tmp = new File(music.getFilePath());
+            byte[] myFileInBytes = new byte[(int) tmp.length()];
+            FileInputStream fis = new FileInputStream(tmp);
+            BufferedInputStream bis = new BufferedInputStream(fis);
+            OutputStream os = this.socket.getOutputStream();
+            int size = myFileInBytes.length;
+            byte[] buffer = new byte[1024];
+            int bytesRead = 0;
+            os.write(myFileInBytes.length);
+            while (size > 0 && (bytesRead = bis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                os.write(myFileInBytes,0,bytesRead);
+                size-=bytesRead;
+
+            }
+            os.flush();
+            bis.close();
+            os.close();
+        } catch(IOException e) {
+            log.warning("Failed to upload music to client");
+        }
+
+    }
+
+    private void mp3Download() {
         try {
             MP3Upload mp3Upload = (MP3Upload)getMessageConnection().getMessage();
             DataInputStream dis = new DataInputStream(this.socket.getInputStream());
             BufferedInputStream input = new BufferedInputStream(dis);
-            log.info("Upload music: " + mp3Upload.getFileName());
+            log.info("Uploaded music: " + mp3Upload.getFileName());
             OutputStream outputFile = new FileOutputStream(mp3Upload.getFileName());
             long size = dis.readLong();
             int bytesRead = 0;
@@ -155,7 +189,7 @@ public class ServerWorker implements Runnable {
             outputFile.close();
             dis.close();
         }catch(IOException e) {
-            e.printStackTrace();
+            log.warning("Failed to download music from client");
         }
 
     }

@@ -88,22 +88,18 @@ public class App {
     }
 
     public void uploadMusic(Music music) {
-        int tmp = musicDatabase.getLastMusicIDAndIncrement();
-        music.setMusicID(tmp);
-        musicDatabase.put(tmp,music);
-        try {
-            for(String tag : music.getTags()) {
+        musicDatabase.put(-1,music);
+        for(String tag : music.getTags()) {
+            try {
                 tagsLock.lock();
-                List<Integer> list = tagsMap.get(tag);
-                if(list == null) {
-                    list = new ArrayList<>();
+                List<Integer> list = tagsMap.computeIfAbsent(tag, k -> new ArrayList<>());
+                list.add(music.getMusicID());
+            } finally {
+                    tagsLock.unlock();
                 }
-                list.add(tmp);
             }
 
-        }finally {
-            tagsLock.unlock();
-        }
+
         if(this.notificationListener != null){
             this.notificationListener.broadcastMusicNotification(music);
         }

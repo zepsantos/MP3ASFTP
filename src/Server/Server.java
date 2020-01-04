@@ -94,6 +94,8 @@ public class Server implements NotificationAvailableListener {
                 return new Notification(op);
             case MusicList:
                 return new MusicListMessage(op);
+            case MP3Download:
+                return new MP3Download(op);
         }
         return new ResponseMessage("");
     }

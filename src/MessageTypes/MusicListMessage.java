@@ -42,7 +42,7 @@ public class MusicListMessage implements Message {
             if(musicMetaData.length == 8) {
                 ArrayList<String> tags;
                 if(!musicMetaData[4].split(",").equals(""))
-                tags = new ArrayList<>(Arrays.asList());
+                tags = new ArrayList<>(Arrays.asList(musicMetaData[4].split(",")));
                 else tags = new ArrayList<>();
                 Music tmp = new Music(musicMetaData[0], musicMetaData[1], musicMetaData[2], Integer.parseInt(musicMetaData[5]), Integer.parseInt(musicMetaData[6]), Integer.parseInt(musicMetaData[7]), tags, musicMetaData[3]);
                 this.musicList.add(tmp);

@@ -197,6 +197,14 @@ public class Client {
                             break;
                         case "4":
                             connectServer();
+                            System.out.println("Insira o id da musica:");
+                            int idM = Integer.parseInt(this.systemIn.readLine());
+                            write(new MP3Download(userID,idM));
+                            downloadMP3();
+                            close();
+                            break;
+                        case "5":
+                            connectServer();
                             write(new ResponseMessage(userID,"logout"));
                             quit = true;
                             notificationThread.interrupt();
@@ -223,6 +231,7 @@ public class Client {
         System.out.println("ID     Titulo               Artista              Ano     NDownload   UploadID");
         if(musicList.isEmpty()) System.out.println("Nao ha musicas carregadas");
         for(Music m : musicList) {
+            if(m == null) continue;
             StringBuilder sb = new StringBuilder();
             sb.append(m.getMusicID());
             sb.append("       ").append(m.getTitle());
@@ -246,16 +255,41 @@ public class Client {
 
     }
 
+    private void downloadMP3() {
+        try {
+            ResponseMessage mp3Upload = new ResponseMessage(this.in.readLine()) ;
+            DataInputStream dis = new DataInputStream(this.socket.getInputStream());
+            BufferedInputStream input = new BufferedInputStream(dis);
+            OutputStream outputFile = new FileOutputStream("clientDownload_" + mp3Upload.getResponse());
+            long size = dis.readLong();
+            int bytesRead = 0;
+            byte[] buffer = new byte[8192];
+            while (size > 0 && (bytesRead = input.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                outputFile.write(buffer, 0, bytesRead);
+                size -= bytesRead;
+            }
+            outputFile.close();
+            dis.close();
+        }catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void uploadMP3(String mp3FileName) {
         try {
             File tmp = new File(mp3FileName);
             byte[] myFileInBytes = new byte[(int) tmp.length()];
             FileInputStream fis = new FileInputStream(tmp);
             BufferedInputStream bis = new BufferedInputStream(fis);
-            bis.read(myFileInBytes,0,myFileInBytes.length);
             OutputStream os = socket.getOutputStream();
+            int size = myFileInBytes.length;
+            byte[] buffer = new byte[8192];
+            int bytesRead = 0;
             os.write(myFileInBytes.length);
-            os.write(myFileInBytes,0,myFileInBytes.length);
+            while (size > 0 && (bytesRead = bis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
+                os.write(myFileInBytes,0,bytesRead);
+                size-=bytesRead;
+            }
             os.flush();
             bis.close();
             os.close();

@@ -33,7 +33,8 @@ public class ServerWorkerFutureTask extends FutureTask<ServerWorkerFutureTask> i
                 return 3;
             case MP3Upload:
                 return 4;
-
+            case MP3Download:
+                return 5;
             default:
                 return 0;
         }
