@@ -31,7 +31,7 @@ public class App {
         lastID = new AtomicInteger();
         tagsLock = new ReentrantLock();
         musicDatabase = MusicDatabase.getInstance();
-        Music music = new Music("teste","teste","teste","teste");
+        Music music = new Music("teste","teste","teste","client/teste.mp3");
         music.setOwnerOfUploadID(0);
         musicDatabase.put(-1,music);
         this.tagsLock.lock();

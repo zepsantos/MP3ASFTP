@@ -3,6 +3,7 @@ package Client;
 
 import MessageTypes.*;
 import Models.Music;
+import Server.DataTransfer;
 
 import javax.imageio.IIOException;
 import java.io.*;
@@ -176,7 +177,8 @@ public class Client {
                             if(music != null) {
                                 MP3Upload mp3Message = new MP3Upload(userID, music);
                                 write(mp3Message);
-                                uploadMP3(mp3FileName);
+                                DataTransfer dataTransfer = new DataTransfer(this.socket);
+                                dataTransfer.UploadFile(mp3FileName);
                             }
                             close();
                             break;
@@ -200,7 +202,9 @@ public class Client {
                             System.out.println("Insira o id da musica:");
                             int idM = Integer.parseInt(this.systemIn.readLine());
                             write(new MP3Download(userID,idM));
-                            downloadMP3();
+                            ResponseMessage messageWithFileName = new ResponseMessage(this.in.readLine());
+                            DataTransfer dataTransfer = new DataTransfer(socket);
+                            dataTransfer.DownloadFile(messageWithFileName.getResponse());
                             close();
                             break;
                         case "5":
@@ -255,7 +259,7 @@ public class Client {
 
     }
 
-    private void downloadMP3() {
+   /* private void downloadMP3() {
         try {
             ResponseMessage mp3Upload = new ResponseMessage(this.in.readLine()) ;
             DataInputStream dis = new DataInputStream(this.socket.getInputStream());
@@ -297,7 +301,7 @@ public class Client {
             e.printStackTrace();
         }
 
-    }
+    } */
 
     private Music getMusicInfoFromUser() {
         try {

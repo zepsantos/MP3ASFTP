@@ -145,24 +145,9 @@ public class ServerWorker implements Runnable {
 
     private void mp3Upload(Music music) {
         try {
-
-            File tmp = new File(music.getFilePath());
-            byte[] myFileInBytes = new byte[(int) tmp.length()];
-            FileInputStream fis = new FileInputStream(tmp);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            OutputStream os = this.socket.getOutputStream();
-            int size = myFileInBytes.length;
-            byte[] buffer = new byte[1024];
-            int bytesRead = 0;
-            os.write(myFileInBytes.length);
-            while (size > 0 && (bytesRead = bis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
-                os.write(myFileInBytes,0,bytesRead);
-                size-=bytesRead;
-
-            }
-            os.flush();
-            bis.close();
-            os.close();
+            DataTransfer dataTransfer = new DataTransfer(this.socket);
+            dataTransfer.UploadFile(music.getFilePath());
+            log.info("Downloaded music: " + music.getTitle());
         } catch(IOException e) {
             log.warning("Failed to upload music to client");
         }
@@ -172,26 +157,15 @@ public class ServerWorker implements Runnable {
     private void mp3Download() {
         try {
             MP3Upload mp3Upload = (MP3Upload)getMessageConnection().getMessage();
-            DataInputStream dis = new DataInputStream(this.socket.getInputStream());
-            BufferedInputStream input = new BufferedInputStream(dis);
+            DataTransfer dataTransfer = new DataTransfer(this.socket);
+            dataTransfer.DownloadFile(mp3Upload.getFileName());
             log.info("Uploaded music: " + mp3Upload.getFileName());
-            OutputStream outputFile = new FileOutputStream(mp3Upload.getFileName());
-            long size = dis.readLong();
-            int bytesRead = 0;
-            byte[] buffer = new byte[1024];
-            while (size > 0 && (bytesRead = input.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
-                outputFile.write(buffer, 0, bytesRead);
-                size -= bytesRead;
-            }
-            Music tmp = (Music)mp3Upload.getMusic().clone();
+            Music tmp = (Music) mp3Upload.getMusic().clone();
             tmp.setOwnerOfUploadID(mp3Upload.getIdUser());
             app.uploadMusic(tmp);
-            outputFile.close();
-            dis.close();
         }catch(IOException e) {
             log.warning("Failed to download music from client");
         }
-
     }
 
 }
