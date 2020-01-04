@@ -10,6 +10,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
+
 import java.util.stream.Collectors;
 
 public class App {
@@ -18,17 +20,39 @@ public class App {
     private NotificationAvailableListener notificationListener;
     private AtomicInteger lastID;
     private MusicDatabase musicDatabase;
+    private ReentrantLock tagsLock;
+    private HashMap<String,List<Integer>> tagsMap;
     private static App inst = null;
 
     private App() {
         users = new HashMap<>();
         usersByIDSession = new HashMap<>();
+        tagsMap = new HashMap<>();
         lastID = new AtomicInteger();
+        tagsLock = new ReentrantLock();
         musicDatabase = MusicDatabase.getInstance();
+        Music music = new Music("teste","teste","teste","teste");
+        music.setOwnerOfUploadID(0);
+        musicDatabase.put(-1,music);
+        this.tagsLock.lock();
+        List<Integer> l = new ArrayList<>();
+        l.add(music.getMusicID());
+        tagsMap.put("teste",l);
+        this.tagsLock.unlock();
     }
 
     public static App getInstance() {
-        if(inst == null) inst = new App();
+        if(inst == null) {
+            ReentrantLock lock = new ReentrantLock();
+            try {
+                lock.lock();
+                inst = new App();
+            } finally {
+                lock.unlock();
+            }
+
+        }
+
         return inst;
     }
 
@@ -55,7 +79,7 @@ public class App {
         return null;
     }
 
-    public void  logout(int uid) { //TODO: Ter cuidado com os locks
+    public void  logout(int uid) {
             this.usersByIDSession.remove(uid);
     }
 
@@ -67,6 +91,19 @@ public class App {
         int tmp = musicDatabase.getLastMusicIDAndIncrement();
         music.setMusicID(tmp);
         musicDatabase.put(tmp,music);
+        try {
+            for(String tag : music.getTags()) {
+                tagsLock.lock();
+                List<Integer> list = tagsMap.get(tag);
+                if(list == null) {
+                    list = new ArrayList<>();
+                }
+                list.add(tmp);
+            }
+
+        }finally {
+            tagsLock.unlock();
+        }
         if(this.notificationListener != null){
             this.notificationListener.broadcastMusicNotification(music);
         }
@@ -78,6 +115,23 @@ public class App {
 }
 
 
+    public List<Music> getMusicsList(String tag) {
+        try {
+            tagsLock.lock();
+
+            if (this.tagsMap.containsKey(tag)) {
+                List<Integer> list = this.tagsMap.get(tag);
+                List<Music> musicList = new ArrayList<>();
+                for (Integer i : list) {
+                    musicList.add(this.musicDatabase.get(i));
+                }
+                return musicList;
+            }
+        } finally {
+            tagsLock.unlock();
+        }
+        return new ArrayList<>();
+    }
 
 
 }

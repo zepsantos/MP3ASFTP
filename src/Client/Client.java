@@ -1,16 +1,13 @@
 package Client;
 
 
-import MessageTypes.Message;
-import MessageTypes.MessageAuthentication;
-import MessageTypes.MessageTypes;
-import MessageTypes.ResponseMessage;
-import MessageTypes.MP3Upload;
+import MessageTypes.*;
 import Models.Music;
 
 import javax.imageio.IIOException;
 import java.io.*;
 import java.net.Socket;
+import java.util.List;
 
 public class Client {
     private Socket socket;
@@ -94,6 +91,8 @@ public class Client {
         System.out.println("--------- Welcome " + this.username + " with id " + this.userID + " ---------");
         System.out.println(" [1] Upload da Musica");
         System.out.println(" [2] Lista de Musicas");
+        System.out.println(" [3] Lista de Musicas com uma tag");
+        System.out.println(" [4] Download de Musica por id");
         System.out.println(" [4] Logout");
         System.out.println("--------------------------");
     }
@@ -183,13 +182,22 @@ public class Client {
                             break;
                         case "2":
                             connectServer();
-                            write(new ResponseMessage(MessageTypes.MusicList,userID,"musicList"));
+                            write(new ResponseMessage(userID,"musicList"));
+                            listenForMusicListAndPrintIT();
 
+                            close();
+                            break;
+                        case "3":
+                            connectServer();
+                            System.out.println("Insira a tag:");
+                            String tag = this.systemIn.readLine();
+                            write(new ResponseMessage(userID,"musicList;" + tag));
+                            listenForMusicListAndPrintIT();
                             close();
                             break;
                         case "4":
                             connectServer();
-                            write(new ResponseMessage(MessageTypes.ResponseMessage,userID,"logout"));
+                            write(new ResponseMessage(userID,"logout"));
                             quit = true;
                             notificationThread.interrupt();
                             close();
@@ -202,6 +210,27 @@ public class Client {
             welcomeMenu();
         } catch(IOException ioe) {
             ioe.printStackTrace();
+        }
+    }
+
+    private void listenForMusicListAndPrintIT() throws IOException{ //TODO: THREADS A ESTOURAR AQUI TALVEZ
+        String tmp = this.in.readLine();
+        MusicListMessage musicListMessage = new MusicListMessage(tmp);
+        printMusicList(musicListMessage.getMusicList());
+    }
+
+    private void printMusicList(List<Music> musicList) {
+        System.out.println("ID     Titulo               Artista              Ano     NDownload   UploadID");
+        if(musicList.isEmpty()) System.out.println("Nao ha musicas carregadas");
+        for(Music m : musicList) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(m.getMusicID());
+            sb.append("       ").append(m.getTitle());
+            sb.append("              ").append(m.getArtist());
+            sb.append("              ").append(m.getYear());
+            sb.append("              ").append(m.getnTimesMusicHasBeenDownloaded());
+            sb.append("              ").append(m.getOwnerOfUploadID());
+            System.out.println(sb.toString());
         }
     }
 

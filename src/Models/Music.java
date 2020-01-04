@@ -50,6 +50,10 @@ public class Music {
         return year;
     }
 
+    public int getnTimesMusicHasBeenDownloaded() {
+        return nTimesMusicHasBeenDownloaded.get();
+    }
+
     public void setYear(String year) {
         this.year = year;
     }

@@ -60,7 +60,7 @@ public class Server implements NotificationAvailableListener {
                 String op = null;
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 op = in.readLine();
-                if(op != null) { //TODO: substituir por while caso queiramos passar mais do que uma mensagem
+                if(op != null) {
                     Message tmp = getMessageObject(op);
 
                     if (tmp.isValidMessage()) {
@@ -92,6 +92,8 @@ public class Server implements NotificationAvailableListener {
                 return new MP3Upload(op);
             case Notification:
                 return new Notification(op);
+            case MusicList:
+                return new MusicListMessage(op);
         }
         return new ResponseMessage("");
     }
@@ -107,7 +109,7 @@ public class Server implements NotificationAvailableListener {
         for(MessageConnection messageConnection : connectionList) {
             try {
                 BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(messageConnection.getSocket().getOutputStream()));
-                ResponseMessage tmp  = new ResponseMessage(MessageTypes.ResponseMessage,m.getOwnerOfUploadID(),m.getTitle());
+                ResponseMessage tmp  = new ResponseMessage(m.getOwnerOfUploadID(),m.getTitle());
                 bw.write(tmp.toString());
                 bw.newLine();
                 bw.flush();

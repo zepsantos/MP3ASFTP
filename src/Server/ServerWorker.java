@@ -75,16 +75,29 @@ public class ServerWorker implements Runnable {
                         ResponseMessage responseMessage = (ResponseMessage) messageConnection.getMessage();
                         if(responseMessage.getResponse().equals("logout")) {
                             logoutUser(responseMessage.getUserID());
+                        }else if(responseMessage.getResponse().substring(0,9).equals("musicList")){
+                            String[] responseTag = responseMessage.getResponse().split(";");
+                            if(responseTag.length == 2)
+                            sendMusicList(responseTag[1]);
+                            else
+                                sendMusicList();
                         }
-                        break;
-                    case MusicList:
-                        MusicListMessage musicListMessage = new MusicListMessage(this.app.getMusicsList());
-                        write(musicListMessage);
-                        log.info("Lista de musicas enviada para " + this.socket.getInetAddress().getHostAddress());
                         break;
                 }
                 close();
 
+    }
+
+    private void sendMusicList() {
+        MusicListMessage musicListMessage = new MusicListMessage(this.app.getMusicsList());
+        write(musicListMessage);
+        log.info("Lista de musicas enviada para " + this.socket.getInetAddress().getHostAddress());
+    }
+    private void sendMusicList(String tag) {
+        List<Music> tmpMusicList = this.app.getMusicsList(tag);
+        MusicListMessage musicListMessage = new MusicListMessage(tmpMusicList);
+        write(musicListMessage);
+        log.info("Lista de musicas com a tag " + tag +  " enviada para " + this.socket.getInetAddress().getHostAddress());
     }
 
     private void logoutUser(int userID) {
@@ -103,19 +116,19 @@ public class ServerWorker implements Runnable {
             if(type == MessageTypes.Register ) {
                 if (app.registerUser(username, password)) {
                     user = app.loginUser(username, password);
-                    write(new ResponseMessage( MessageTypes.ResponseMessage,user.getID(), "registered"));
+                    write(new ResponseMessage(user.getID(), "registered"));
                     log.info(username + " registered");
                     repeat = false;
                 } else {
-                    write(new ResponseMessage( MessageTypes.ResponseMessage ,-1, "not registered"));
+                    write(new ResponseMessage(-1, "not registered"));
                 }
             } else {
                 if((user = app.loginUser(username,password)) != null) {
-                    write(new ResponseMessage(MessageTypes.ResponseMessage, user.getID(), "login done"));
+                    write(new ResponseMessage(user.getID(), "login done"));
                     log.info(username + " logged in with id: " + user.getID());
                     repeat = false;
                 } else {
-                    write(new ResponseMessage( MessageTypes.ResponseMessage,-1, "login unsuccessful"));
+                    write(new ResponseMessage( -1, "login unsuccessful"));
                 }
 
             }
@@ -136,7 +149,9 @@ public class ServerWorker implements Runnable {
                 outputFile.write(buffer, 0, bytesRead);
                 size -= bytesRead;
             }
-            app.uploadMusic((Music)mp3Upload.getMusic().clone());
+            Music tmp = (Music)mp3Upload.getMusic().clone();
+            tmp.setOwnerOfUploadID(mp3Upload.getIdUser());
+            app.uploadMusic(tmp);
             outputFile.close();
             dis.close();
         }catch(IOException e) {

@@ -10,18 +10,21 @@ public class ResponseMessage implements Message {
     private String response;
     private MessageTypes type;
     private boolean validMessage = true;
-    public ResponseMessage(MessageTypes type,int user,String response) {
-        this.type = type;
+    private ResponseMessage() {
+        type = MessageTypes.ResponseMessage;
+    }
+    public ResponseMessage(int user,String response) {
+        this();
         this.userID = user;
         this.response = response;
     }
 
     public ResponseMessage(String request) {
+        this();
         if(request != null) {
             Pattern pattern = Pattern.compile("\\[(.*);(.*)](.*)");
             Matcher match = pattern.matcher(request);
             if (match.matches()) {
-                this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.userID = Integer.parseInt(match.group(2));
                 this.response = match.group(3);
             } else {

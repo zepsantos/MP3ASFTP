@@ -39,11 +39,20 @@ public class MusicListMessage implements Message {
         String[] musicInfo = musicListString.split("/");
         for(String s : musicInfo) {
             String[] musicMetaData = s.split(";");
-            ArrayList<String> tags = new ArrayList<>( Arrays.asList(musicMetaData[4].split(",")));
-            Music tmp = new Music(musicMetaData[0],musicMetaData[1],musicMetaData[2],Integer.parseInt(musicMetaData[5]),Integer.parseInt(musicMetaData[6]),Integer.parseInt(musicMetaData[7]),tags,musicMetaData[3]);
-            this.musicList.add(tmp);
+            if(musicMetaData.length == 8) {
+                ArrayList<String> tags;
+                if(!musicMetaData[4].split(",").equals(""))
+                tags = new ArrayList<>(Arrays.asList());
+                else tags = new ArrayList<>();
+                Music tmp = new Music(musicMetaData[0], musicMetaData[1], musicMetaData[2], Integer.parseInt(musicMetaData[5]), Integer.parseInt(musicMetaData[6]), Integer.parseInt(musicMetaData[7]), tags, musicMetaData[3]);
+                this.musicList.add(tmp);
+            }
         }
 
+    }
+
+    public List<Music> getMusicList() {
+        return new ArrayList<>(this.musicList);
     }
 
     @Override
@@ -65,5 +74,6 @@ public class MusicListMessage implements Message {
             sb.append('/');
         }
         return sb.toString();
+
     }
 }
