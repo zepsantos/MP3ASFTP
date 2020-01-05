@@ -1,7 +1,5 @@
 package MessageTypes;
 
-import MessageTypes.MessageTypes;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,7 +26,7 @@ public class ResponseMessage implements Message {
                 this.userID = Integer.parseInt(match.group(2));
                 this.response = match.group(3);
             } else {
-                validMessage = false;//TODO: throw exception
+                validMessage = false;
             }
         } else {
             validMessage = false;

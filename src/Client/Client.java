@@ -29,13 +29,7 @@ public class Client {
     }
 
     private void connectServer() {
-        if(this.socket == null) {
-            connectSocket();
-            return;
-        }
-       if(!this.socket.isConnected()) {
         connectSocket();
-       }
     }
 
     private void connectSocket() {
@@ -124,6 +118,7 @@ public class Client {
                         appStart();
                         break;
                     default:
+                        quit = true;
                         break;
                 }
 
@@ -170,26 +165,7 @@ public class Client {
                 while(!quit && (keyboard = this.systemIn.readLine()) != null) {
                     switch(keyboard) {
                         case "1":
-                            connectServer();
-                            String mp3FileName = chooseMp3File();
-                            Music music = getMusicInfoFromUser();
-                            music.setFilePath(mp3FileName);
-                            if(music != null) {
-                                MP3Upload mp3Message = new MP3Upload(userID, music);
-                                write(mp3Message);
-                                DataTransfer dataTransfer = new DataTransfer(this.socket);
-                                new Thread(() -> {
-                                    try {
-                                        dataTransfer.UploadFile(mp3FileName);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                        notificationListener.showMusicUploadNotification("Falha no upload da musica");
-                                    } finally {
-                                        close();
-                                    }
-                                }).start();
-                            }
-
+                            processUploadMusic();
                             break;
                         case "2":
                             connectServer();
@@ -218,7 +194,7 @@ public class Client {
                                     DataTransfer dataTransfer = new DataTransfer(socket);
                                     try {
                                         dataTransfer.DownloadFile(addClientPath(messageWithFileName.getResponse()));
-                                        notificationListener.showMusicUploadNotification("Download da musica concluido");  //TODO:PASSAR NOME DA MUSICA
+                                        notificationListener.showMusicUploadNotification("Download da musica com o ficheiro: " + messageWithFileName.getResponse() + " concluido");
                                     } catch (IOException e) {
                                         notificationListener.showMusicUploadNotification("Falha no download da musica");
                                     } finally {
@@ -226,6 +202,9 @@ public class Client {
                                     }
 
                                 }).start();
+                            } else {
+                                System.out.println("Não existe esse id");
+                                close();
                             }
                             break;
                         case "5":
@@ -251,6 +230,29 @@ public class Client {
         String tmp = this.in.readLine();
         MusicListMessage musicListMessage = new MusicListMessage(tmp);
         printMusicList(musicListMessage.getMusicList());
+    }
+
+
+    private void processUploadMusic() throws IOException {
+        connectServer();
+        String mp3FileName = chooseMp3File();
+        Music music = getMusicInfoFromUser();
+        if (music != null) {
+            music.setFilePath(mp3FileName);
+            MP3Upload mp3Message = new MP3Upload(userID, music);
+            write(mp3Message);
+            DataTransfer dataTransfer = new DataTransfer(this.socket);
+            new Thread(() -> {
+                try {
+                    dataTransfer.UploadFile(mp3FileName);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    notificationListener.showMusicUploadNotification("Falha no upload da musica");
+                } finally {
+                    close();
+                }
+            }).start();
+        }
     }
 
     private void printMusicList(List<Music> musicList) {
@@ -289,7 +291,7 @@ public class Client {
             System.out.println("Insira as tags da musica (separado por ;) : ");
             String tagString = this.systemIn.readLine();
             Music tmp = new Music(title,artist,year,null);
-            String[] tags = tagString.split(";"); //TODO: PODE ESTOURAR
+            String[] tags = tagString.split(";");
             for(String s : tags) tmp.addTag(s);
             return tmp;
         } catch(IOException e) {
@@ -300,8 +302,16 @@ public class Client {
     }
 
     private String chooseMp3File() throws IOException {
-        System.out.println("Insira o path do ficheiro: ");
-        return this.systemIn.readLine();
+        File tmp = null;
+        String path;
+
+        do {
+            System.out.println("Insira o path do ficheiro: ");
+            path = this.systemIn.readLine();
+            tmp = new File(path);
+
+        } while (!tmp.exists());
+        return path;
     }
 
 

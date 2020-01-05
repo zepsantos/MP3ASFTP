@@ -74,7 +74,10 @@ public class ServerWorker implements Runnable {
                     case MP3Download:
                         MP3Download mp3Download = (MP3Download) getMessageConnection().getMessage();
                         Music mtmp = MusicDatabase.getInstance().get(mp3Download.getIdMusic());
-                        if(mtmp == null) return;
+                        if (mtmp == null) {
+                            write(new ResponseMessage(-1, "fileNotFound"));
+                            return;
+                        }
                         write(new ResponseMessage(-1,mtmp.getFilePath()));
                         mp3Upload(mtmp);
                         break;

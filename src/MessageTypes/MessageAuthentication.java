@@ -21,7 +21,7 @@ public class MessageAuthentication implements Message {
                 this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
                 this.user = match.group(2);
                 this.password = match.group(3);
-            } else { //TODO: throw exception
+            } else {
                 validMessage = false;
             }
         }

@@ -56,7 +56,7 @@ public class App {
 
     }
 
-    public User loginUser(String username, String password) { //TODO: Ter cuidado com os locks
+    public User loginUser(String username, String password) {
         if(this.users.containsKey(username)) {
             User user = this.users.get(username);
             if (user.getPassword().equals(password)) {

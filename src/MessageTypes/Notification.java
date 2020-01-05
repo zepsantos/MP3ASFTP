@@ -25,7 +25,7 @@ public class Notification implements Message {
             Matcher match = pattern.matcher(request);
             if (match.matches()) {
                 this.userID = Integer.parseInt(match.group(2));
-            } //TODO: throw exception
+            }
         } else {
             validMessage = false;
         }
