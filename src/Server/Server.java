@@ -16,7 +16,7 @@ import java.util.logging.*;
 
 
 public class Server implements NotificationAvailableListener, DownloadFinishedListener {
-    private static int MAX_DOWNLOAD_SAMETIME = 1;
+    public static int MAX_DOWNLOAD_SAMETIME = 1;
     private ServerSocket serverSocket;
     private int port;
     private ThreadPoolExecutor threadPoolExecutor;
@@ -74,19 +74,13 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
 
     private void startServer() {
         app.setNotificationListener(this);
+        new Thread(new DownloadQueueWorker(mp3DownloadQueue,this.downloadsAtTheSameTime,this.threadPoolExecutor,this.nDownloadsPerID));
         try {
             log.info("Server inicializing...");
             this.serverSocket = new ServerSocket(this.port);
             log.info("Waiting for Connection");
             while(true) {
-                while (!this.mp3DownloadQueue.isEmpty() && this.downloadsAtTheSameTime.get() < MAX_DOWNLOAD_SAMETIME) {
-                    MessageConnection mp3mc = this.mp3DownloadQueue.poll();
-                    runMP3DownloadWorker(mp3mc);
-                    MP3Download mp3tmp = (MP3Download) mp3mc.getMessage();
-                    int tmpcounter = this.nDownloadsPerID.get(mp3tmp.getIdUser());
-                    this.nDownloadsPerID.put(mp3tmp.getIdUser(), --tmpcounter);
-                    log.info("MP3Download removido da queue e pronto a ser transferido");
-                }
+
                 Socket socket=serverSocket.accept();
                 String op = null;
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -108,9 +102,11 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
             }
 
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.warning("Servidor provavelmente foi a baixo");
         }
     }
+
+
 
     private void processMP3Download(Socket socket, Message message) {
         if (this.downloadsAtTheSameTime.get() == MAX_DOWNLOAD_SAMETIME) {
@@ -123,6 +119,8 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
             try (BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
 
                 bufferedWriter.write(new ResponseMessage(userID, "onQueue").toString());
+                bufferedWriter.newLine();
+                bufferedWriter.flush();
             } catch (IOException e) {
                 log.warning("Erro ao avisar cliente que o download estava em lista de espera");
             }
