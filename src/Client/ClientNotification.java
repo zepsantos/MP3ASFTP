@@ -75,6 +75,7 @@ public class ClientNotification implements Runnable {
                     }
                 }
                 ResponseMessage notification = new ResponseMessage(this.in.readLine());
+                if(notification.getResponse() == null) continue;
                 StringBuilder sb = new StringBuilder("O utilizador ");
                 sb.append(notification.getUserID());
                 sb.append(" fez upload da musica ");
