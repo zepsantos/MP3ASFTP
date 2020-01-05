@@ -184,9 +184,10 @@ public class Client {
                             this.systemIn.readLine();
                             break;
                         case "4":
-                            connectServer();
+
                             System.out.println("Insira o id da musica:");
                             int idM = Integer.parseInt(this.systemIn.readLine());
+                            connectServer();
                             write(new MP3Download(userID,idM));
                             ResponseMessage messageWithFileName = new ResponseMessage(this.in.readLine());
                             if (!messageWithFileName.getResponse().equals("fileNotFound")) {
@@ -253,7 +254,7 @@ public class Client {
                     close();
                 }
             }).start();
-            close();
+
         }
     }
 
