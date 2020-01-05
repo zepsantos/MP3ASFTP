@@ -6,23 +6,30 @@ import Models.Music;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.*;
 
 
-public class Server implements NotificationAvailableListener {
+public class Server implements NotificationAvailableListener, DownloadFinishedListener {
+    private static int MAX_DOWNLOAD_SAMETIME = 10;
     private ServerSocket serverSocket;
     private int port;
     private ThreadPoolExecutor threadPoolExecutor;
     private List<MessageConnection> connectionList;
+    private AtomicInteger downloadsAtTheSameTime;
     private final static Logger  log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-
+    private Queue<MessageConnection> mp3DownloadQueue;
+    private HashMap<Integer, Integer> nDownloadsPerID;
+    private App app;
     public Server(int port) {
         this.port = port;
+        this.app = App.getInstance();
+        instantiateMaxDownload();
         connectionList = new ArrayList<>();
         threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
             @Override
@@ -49,35 +56,82 @@ public class Server implements NotificationAvailableListener {
         log.addHandler(ch);
     }
 
+    private void instantiateMaxDownload() {
+        this.nDownloadsPerID = new HashMap<>();
+        this.downloadsAtTheSameTime = new AtomicInteger();
+        this.mp3DownloadQueue = new PriorityQueue<MessageConnection>(new Comparator<MessageConnection>() {
+            @Override
+            public int compare(MessageConnection mc1, MessageConnection mc2) {
+                MP3Download m1 = (MP3Download) mc1.getMessage();
+                MP3Download m2 = (MP3Download) mc2.getMessage();
+                int countm1 = nDownloadsPerID.get(m1.getIdUser());
+                int countm2 = nDownloadsPerID.get(m2.getIdUser());
+                return countm1 - countm2;
+            }
+        });
+        DownloadsFinisherHelper.getInstance().setDownloadFinishedListener(this);
+    }
+
     private void startServer() {
-        App.getInstance().setNotificationListener(this);
+        app.setNotificationListener(this);
         try {
             log.info("Server inicializing...");
             this.serverSocket = new ServerSocket(this.port);
             log.info("Waiting for Connection");
             while(true) {
+                while (!this.mp3DownloadQueue.isEmpty() && this.downloadsAtTheSameTime.get() <= 10) {
+                    MessageConnection mp3mc = this.mp3DownloadQueue.poll();
+                    runMP3DownloadWorker(mp3mc);
+                    MP3Download mp3tmp = (MP3Download) mp3mc.getMessage();
+                    int tmpcounter = this.nDownloadsPerID.get(mp3tmp.getIdUser());
+                    this.nDownloadsPerID.put(mp3tmp.getIdUser(), --tmpcounter);
+                }
                 Socket socket=serverSocket.accept();
                 String op = null;
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 op = in.readLine();
                 if(op != null) {
                     Message tmp = getMessageObject(op);
-
                     if (tmp.isValidMessage()) {
                         log.info(new StringBuilder().append("Message Type: ").append(tmp.getMessageType().toString()).append(" received from ").append(socket.getInetAddress().getHostAddress()).toString());
                         if (tmp instanceof Notification) {
-                            log.info("Added to notification broadcast " + socket.getInetAddress().getHostAddress());
-                            this.connectionList.add(new MessageConnection(tmp,socket));
+                            processNotification(socket, tmp);
+                        } else if (tmp instanceof MP3Download) {
+                            processMP3Download(socket, tmp);
                         } else {
                             threadPoolExecutor.execute(new ServerWorkerFutureTask(new ServerWorker(new MessageConnection(tmp, socket))));
                         }
-                    }
+
                     }
                 }
+            }
 
-            } catch (IOException ex) {
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private void processMP3Download(Socket socket, Message message) {
+        if (this.downloadsAtTheSameTime.get() == MAX_DOWNLOAD_SAMETIME) {
+            int userID = ((MP3Download) message).getIdUser();
+            Integer tmpCount = this.nDownloadsPerID.get(userID);
+            if (tmpCount == null)
+                tmpCount = 0;
+            this.nDownloadsPerID.put(userID, ++tmpCount);
+            this.mp3DownloadQueue.add(new MessageConnection(message, socket));
+        } else {
+            runMP3DownloadWorker(new MessageConnection(message, socket));
+        }
+    }
+
+    private void runMP3DownloadWorker(MessageConnection messageConnection) {
+        threadPoolExecutor.execute(new ServerWorkerFutureTask(new ServerWorker(messageConnection)));
+        this.downloadsAtTheSameTime.incrementAndGet();
+    }
+
+    private void processNotification(Socket socket, Message message) {
+        log.info("Added to notification broadcast " + socket.getInetAddress().getHostAddress());
+        this.connectionList.add(new MessageConnection(message, socket));
     }
 
     private Message getMessageObject(String op ) {
@@ -120,6 +174,10 @@ public class Server implements NotificationAvailableListener {
                 log.severe("Failed to send notification to " + messageConnection.getSocket().getInetAddress().getHostAddress());
             }
         }
+    }
+
+    public void decrementDownloadsAtTheSameTime() {
+        this.downloadsAtTheSameTime.getAndDecrement();
     }
 
 

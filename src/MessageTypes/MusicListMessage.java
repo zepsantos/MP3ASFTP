@@ -52,6 +52,7 @@ public class MusicListMessage implements Message {
     }
 
     public List<Music> getMusicList() {
+        if (this.musicList == null) return new ArrayList<>();
         return new ArrayList<>(this.musicList);
     }
 

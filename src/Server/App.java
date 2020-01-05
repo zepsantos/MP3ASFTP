@@ -1,17 +1,14 @@
 package Server;
 
-import Client.NotificationListener;
 import Models.Music;
 import Models.MusicDatabase;
 import Models.User;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import java.util.stream.Collectors;
 
 public class App {
@@ -31,14 +28,6 @@ public class App {
         lastID = new AtomicInteger();
         tagsLock = new ReentrantLock();
         musicDatabase = MusicDatabase.getInstance();
-        Music music = new Music("teste","teste","teste","client/teste.mp3");
-        music.setOwnerOfUploadID(0);
-        musicDatabase.put(-1,music);
-        this.tagsLock.lock();
-        List<Integer> l = new ArrayList<>();
-        l.add(music.getMusicID());
-        tagsMap.put("teste",l);
-        this.tagsLock.unlock();
     }
 
     public static App getInstance() {
@@ -55,6 +44,7 @@ public class App {
 
         return inst;
     }
+
 
     public boolean registerUser(String username, String password) {
         if(!this.users.containsKey(username)) {

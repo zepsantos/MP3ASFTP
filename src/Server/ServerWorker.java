@@ -1,7 +1,6 @@
 package Server;
 
 import MessageTypes.*;
-
 import Models.Music;
 import Models.MusicDatabase;
 import Models.User;
@@ -146,11 +145,14 @@ public class ServerWorker implements Runnable {
     private void mp3Upload(Music music) {
         try {
             DataTransfer dataTransfer = new DataTransfer(this.socket);
-            dataTransfer.UploadFile(music.getFilePath());
+            dataTransfer.UploadFile(addServerPath(music.getFilePath()));
             log.info("Downloaded music: " + music.getTitle());
+            Music tmp = MusicDatabase.getInstance().get(music.getMusicID());
+            tmp.incrementMusicDownloaderCounter();
         } catch(IOException e) {
             log.warning("Failed to upload music to client");
         }
+        DownloadsFinisherHelper.getInstance().getDownloadFinishedListener().decrementDownloadsAtTheSameTime();
 
     }
 
@@ -158,7 +160,7 @@ public class ServerWorker implements Runnable {
         try {
             MP3Upload mp3Upload = (MP3Upload)getMessageConnection().getMessage();
             DataTransfer dataTransfer = new DataTransfer(this.socket);
-            dataTransfer.DownloadFile(mp3Upload.getFileName());
+            dataTransfer.DownloadFile(addServerPath(mp3Upload.getFileName()));
             log.info("Uploaded music: " + mp3Upload.getFileName());
             Music tmp = (Music) mp3Upload.getMusic().clone();
             tmp.setOwnerOfUploadID(mp3Upload.getIdUser());
@@ -166,6 +168,10 @@ public class ServerWorker implements Runnable {
         }catch(IOException e) {
             log.warning("Failed to download music from client");
         }
+    }
+
+    private String addServerPath(String s) {
+        return "ServerFiles/" + s;
     }
 
 }

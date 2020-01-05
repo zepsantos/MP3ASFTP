@@ -5,7 +5,6 @@ import MessageTypes.*;
 import Models.Music;
 import Server.DataTransfer;
 
-import javax.imageio.IIOException;
 import java.io.*;
 import java.net.Socket;
 import java.util.List;
@@ -19,11 +18,13 @@ public class Client {
     private String username;
     private String hostname;
     private int port;
+    private NotificationListener notificationListener;
     private Thread notificationThread;
 
     public Client(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;
+        this.notificationListener = notification -> System.out.println(notification);
         this.systemIn = new BufferedReader(new InputStreamReader(System.in));
     }
 
@@ -94,7 +95,7 @@ public class Client {
         System.out.println(" [2] Lista de Musicas");
         System.out.println(" [3] Lista de Musicas com uma tag");
         System.out.println(" [4] Download de Musica por id");
-        System.out.println(" [4] Logout");
+        System.out.println(" [5] Logout");
         System.out.println("--------------------------");
     }
 
@@ -167,7 +168,6 @@ public class Client {
             while(!quit) {
                 appMenu();
                 while(!quit && (keyboard = this.systemIn.readLine()) != null) {
-                    appMenu();
                     switch(keyboard) {
                         case "1":
                             connectServer();
@@ -178,16 +178,25 @@ public class Client {
                                 MP3Upload mp3Message = new MP3Upload(userID, music);
                                 write(mp3Message);
                                 DataTransfer dataTransfer = new DataTransfer(this.socket);
-                                dataTransfer.UploadFile(mp3FileName);
+                                new Thread(() -> {
+                                    try {
+                                        dataTransfer.UploadFile(mp3FileName);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                        notificationListener.showMusicUploadNotification("Falha no upload da musica");
+                                    } finally {
+                                        close();
+                                    }
+                                }).start();
                             }
-                            close();
+
                             break;
                         case "2":
                             connectServer();
                             write(new ResponseMessage(userID,"musicList"));
                             listenForMusicListAndPrintIT();
-
                             close();
+                            this.systemIn.readLine();
                             break;
                         case "3":
                             connectServer();
@@ -196,6 +205,7 @@ public class Client {
                             write(new ResponseMessage(userID,"musicList;" + tag));
                             listenForMusicListAndPrintIT();
                             close();
+                            this.systemIn.readLine();
                             break;
                         case "4":
                             connectServer();
@@ -203,9 +213,20 @@ public class Client {
                             int idM = Integer.parseInt(this.systemIn.readLine());
                             write(new MP3Download(userID,idM));
                             ResponseMessage messageWithFileName = new ResponseMessage(this.in.readLine());
-                            DataTransfer dataTransfer = new DataTransfer(socket);
-                            dataTransfer.DownloadFile(messageWithFileName.getResponse());
-                            close();
+                            if (!messageWithFileName.getResponse().equals("fileNotFound")) {
+                                new Thread(() -> {
+                                    DataTransfer dataTransfer = new DataTransfer(socket);
+                                    try {
+                                        dataTransfer.DownloadFile(addClientPath(messageWithFileName.getResponse()));
+                                        notificationListener.showMusicUploadNotification("Download da musica concluido");  //TODO:PASSAR NOME DA MUSICA
+                                    } catch (IOException e) {
+                                        notificationListener.showMusicUploadNotification("Falha no download da musica");
+                                    } finally {
+                                        close();
+                                    }
+
+                                }).start();
+                            }
                             break;
                         case "5":
                             connectServer();
@@ -217,6 +238,7 @@ public class Client {
                         default:
                             break;
                     }
+                    appMenu();
                 }
             }
             welcomeMenu();
@@ -248,60 +270,13 @@ public class Client {
     }
 
     private void listenForNotifications() {
-        ClientNotification clientNotification = new ClientNotification(new NotificationListener() {
-            @Override
-            public void showMusicUploadNotification(String notification) {
-                System.out.println(notification);
-            }
-        },hostname,port,userID);
+        ClientNotification clientNotification = new ClientNotification(notificationListener
+                , hostname, port, userID);
         notificationThread = new Thread(clientNotification);
         notificationThread.start();
 
     }
 
-   /* private void downloadMP3() {
-        try {
-            ResponseMessage mp3Upload = new ResponseMessage(this.in.readLine()) ;
-            DataInputStream dis = new DataInputStream(this.socket.getInputStream());
-            BufferedInputStream input = new BufferedInputStream(dis);
-            OutputStream outputFile = new FileOutputStream("clientDownload_" + mp3Upload.getResponse());
-            long size = dis.readLong();
-            int bytesRead = 0;
-            byte[] buffer = new byte[8192];
-            while (size > 0 && (bytesRead = input.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
-                outputFile.write(buffer, 0, bytesRead);
-                size -= bytesRead;
-            }
-            outputFile.close();
-            dis.close();
-        }catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void uploadMP3(String mp3FileName) {
-        try {
-            File tmp = new File(mp3FileName);
-            byte[] myFileInBytes = new byte[(int) tmp.length()];
-            FileInputStream fis = new FileInputStream(tmp);
-            BufferedInputStream bis = new BufferedInputStream(fis);
-            OutputStream os = socket.getOutputStream();
-            int size = myFileInBytes.length;
-            byte[] buffer = new byte[8192];
-            int bytesRead = 0;
-            os.write(myFileInBytes.length);
-            while (size > 0 && (bytesRead = bis.read(buffer, 0, (int) Math.min(buffer.length, size))) != -1) {
-                os.write(myFileInBytes,0,bytesRead);
-                size-=bytesRead;
-            }
-            os.flush();
-            bis.close();
-            os.close();
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-
-    } */
 
     private Music getMusicInfoFromUser() {
         try {
@@ -330,70 +305,9 @@ public class Client {
     }
 
 
-
-}
-
-/*
-
-    }
-     private void appStart() {
-        try {
-            boolean quit = false;
-            String keyboard = null;
-            while(!quit) {
-                appMenu();
-                while(!quit && (keyboard = this.systemIn.readLine()) != null) {
-                    switch(keyboard) {
-                        case "1":
-                            break;
-                        case "4":
-                            write("logout");
-                            quit = true;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
-            welcomeMenu();
-        } catch(IOException ioe) {
-            ioe.printStackTrace();
-        }
-    }
-
-    private void startClient() {
-        try {
-            boolean quit=false;
-            String keyboard = null;
-            while(!quit) {
-                welcomeMenu();
-                while (!quit && (keyboard = this.systemIn.readLine()) != null) {
-                    switch(keyboard) {
-                        case "1":
-                            write("register");
-                            System.out.println("--------- Register ---------");
-                            userCycle("registered","Models.User already registered");
-                            appStart();
-                            break;
-                        case "2":
-                            write("login");
-                            System.out.println("------ Login -------");
-                            userCycle("login done","Models.User logged in or not found");
-                            appStart();
-                            break;
-                        default:
-                            quit = true;
-                            write("quit");
-                    }
-
-                }
-            }
-
-        } catch(IOException e) {
-
-        }
-
+    private String addClientPath(String s) {
+        return "ClientFiles/" + s;
     }
 }
 
- */
+

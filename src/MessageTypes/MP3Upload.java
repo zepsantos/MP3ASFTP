@@ -25,7 +25,7 @@ public class MP3Upload  implements  Message{
         if(match.matches()) {
             this.type = MessageTypes.fromInt(Integer.parseInt(match.group(1)));
             this.idUser = Integer.parseInt(match.group(2));
-            this.fileName = "uploaded_" + match.group(3);
+            this.fileName = match.group(3);
             String musicName = match.group(4);
             String artist = match.group(5);
             String yearMusic = match.group(6);
