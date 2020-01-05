@@ -226,7 +226,7 @@ public class Client {
         }
     }
 
-    private void listenForMusicListAndPrintIT() throws IOException{ //TODO: THREADS A ESTOURAR AQUI TALVEZ
+    private void listenForMusicListAndPrintIT() throws IOException{
         String tmp = this.in.readLine();
         MusicListMessage musicListMessage = new MusicListMessage(tmp);
         printMusicList(musicListMessage.getMusicList());
@@ -234,12 +234,13 @@ public class Client {
 
 
     private void processUploadMusic() throws IOException {
-        connectServer();
+
         String mp3FileName = chooseMp3File();
         Music music = getMusicInfoFromUser();
         if (music != null) {
             music.setFilePath(mp3FileName);
             MP3Upload mp3Message = new MP3Upload(userID, music);
+            connectServer();
             write(mp3Message);
             DataTransfer dataTransfer = new DataTransfer(this.socket);
             new Thread(() -> {
@@ -252,6 +253,7 @@ public class Client {
                     close();
                 }
             }).start();
+            close();
         }
     }
 
