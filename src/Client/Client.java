@@ -175,28 +175,32 @@ public class Client {
                             this.systemIn.readLine();
                             break;
                         case "3":
-                            connectServer();
                             System.out.println("Insira a tag:");
                             String tag = this.systemIn.readLine();
+                            connectServer();
                             write(new ResponseMessage(userID,"musicList;" + tag));
                             listenForMusicListAndPrintIT();
                             close();
                             this.systemIn.readLine();
                             break;
                         case "4":
-
                             System.out.println("Insira o id da musica:");
                             int idM = Integer.parseInt(this.systemIn.readLine());
                             connectServer();
                             write(new MP3Download(userID,idM));
                             ResponseMessage messageWithFileName = new ResponseMessage(this.in.readLine());
                             if (!messageWithFileName.getResponse().equals("fileNotFound")) {
+                                if (messageWithFileName.getResponse().equals("onQueue"))
+                                    System.out.println("Download em espera, eventualmente vai receber o ficheiro.");
                                 new Thread(() -> {
                                     DataTransfer dataTransfer = new DataTransfer(socket);
                                     try {
-                                        dataTransfer.DownloadFile(addClientPath(messageWithFileName.getResponse()));
-                                        notificationListener.showMusicUploadNotification("Download da musica com o ficheiro: " + messageWithFileName.getResponse() + " concluido");
+                                        BufferedReader tmpIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                                        ResponseMessage tmp = new ResponseMessage(tmpIn.readLine());
+                                        dataTransfer.DownloadFile(addClientPath(tmp.getResponse()));
+                                        notificationListener.showMusicUploadNotification("Download da musica com o ficheiro: " + tmp.getResponse() + " concluido");
                                     } catch (IOException e) {
+                                        e.printStackTrace();
                                         notificationListener.showMusicUploadNotification("Falha no download da musica");
                                     } finally {
                                         close();
@@ -254,7 +258,6 @@ public class Client {
                     close();
                 }
             }).start();
-
         }
     }
 

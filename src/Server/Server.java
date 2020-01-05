@@ -16,7 +16,7 @@ import java.util.logging.*;
 
 
 public class Server implements NotificationAvailableListener, DownloadFinishedListener {
-    private static int MAX_DOWNLOAD_SAMETIME = 10;
+    private static int MAX_DOWNLOAD_SAMETIME = 1;
     private ServerSocket serverSocket;
     private int port;
     private ThreadPoolExecutor threadPoolExecutor;
@@ -31,7 +31,7 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
         this.app = App.getInstance();
         instantiateMaxDownload();
         connectionList = new ArrayList<>();
-        threadPoolExecutor = new ThreadPoolExecutor(10, 10, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
+        threadPoolExecutor = new ThreadPoolExecutor(2, 3, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
             @Override
             public void rejectedExecution(Runnable runnable, ThreadPoolExecutor threadPoolExecutor) {
                 threadPoolExecutor.execute(runnable);
@@ -79,12 +79,13 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
             this.serverSocket = new ServerSocket(this.port);
             log.info("Waiting for Connection");
             while(true) {
-                while (!this.mp3DownloadQueue.isEmpty() && this.downloadsAtTheSameTime.get() <= 10) {
+                while (!this.mp3DownloadQueue.isEmpty() && this.downloadsAtTheSameTime.get() < MAX_DOWNLOAD_SAMETIME) {
                     MessageConnection mp3mc = this.mp3DownloadQueue.poll();
                     runMP3DownloadWorker(mp3mc);
                     MP3Download mp3tmp = (MP3Download) mp3mc.getMessage();
                     int tmpcounter = this.nDownloadsPerID.get(mp3tmp.getIdUser());
                     this.nDownloadsPerID.put(mp3tmp.getIdUser(), --tmpcounter);
+                    log.info("MP3Download removido da queue e pronto a ser transferido");
                 }
                 Socket socket=serverSocket.accept();
                 String op = null;
@@ -119,6 +120,13 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
                 tmpCount = 0;
             this.nDownloadsPerID.put(userID, ++tmpCount);
             this.mp3DownloadQueue.add(new MessageConnection(message, socket));
+            try (BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
+
+                bufferedWriter.write(new ResponseMessage(userID, "onQueue").toString());
+            } catch (IOException e) {
+                log.warning("Erro ao avisar cliente que o download estava em lista de espera");
+            }
+            log.info("MP3Download added to queue");
         } else {
             runMP3DownloadWorker(new MessageConnection(message, socket));
         }
