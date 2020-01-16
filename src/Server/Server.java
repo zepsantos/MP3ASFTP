@@ -16,7 +16,7 @@ import java.util.logging.*;
 
 
 public class Server implements NotificationAvailableListener, DownloadFinishedListener {
-    public static int MAX_DOWNLOAD_SAMETIME = 1;
+    public static int MAX_DOWNLOAD_SAMETIME = 9;
     private ServerSocket serverSocket;
     private int port;
     private ThreadPoolExecutor threadPoolExecutor;
@@ -31,7 +31,7 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
         this.app = App.getInstance();
         instantiateMaxDownload();
         connectionList = new ArrayList<>();
-        threadPoolExecutor = new ThreadPoolExecutor(2, 3, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
+        threadPoolExecutor = new ThreadPoolExecutor(10, 11, 1000, TimeUnit.MILLISECONDS, new PriorityBlockingQueue<>(), new RejectedExecutionHandler() {
             @Override
             public void rejectedExecution(Runnable runnable, ThreadPoolExecutor threadPoolExecutor) {
                 threadPoolExecutor.execute(runnable);
@@ -116,14 +116,6 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
                 tmpCount = 0;
             this.nDownloadsPerID.put(userID, ++tmpCount);
             this.mp3DownloadQueue.add(new MessageConnection(message, socket));
-            try (BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))) {
-
-                bufferedWriter.write(new ResponseMessage(userID, "onQueue").toString());
-                bufferedWriter.newLine();
-                bufferedWriter.flush();
-            } catch (IOException e) {
-                log.warning("Erro ao avisar cliente que o download estava em lista de espera");
-            }
             log.info("MP3Download added to queue");
         } else {
             runMP3DownloadWorker(new MessageConnection(message, socket));
@@ -178,7 +170,7 @@ public class Server implements NotificationAvailableListener, DownloadFinishedLi
                 log.info("Sending Notification to " + messageConnection.getSocket().getInetAddress().getHostAddress());
             } catch(IOException e) {
                 log.severe("Failed to send notification to " + messageConnection.getSocket().getInetAddress().getHostAddress());
-            }
+        }
         }
     }
 

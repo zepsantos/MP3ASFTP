@@ -186,31 +186,7 @@ public class Client {
                         case "4":
                             System.out.println("Insira o id da musica:");
                             int idM = Integer.parseInt(this.systemIn.readLine());
-                            connectServer();
-                            write(new MP3Download(userID,idM));
-                            ResponseMessage messageWithFileName = new ResponseMessage(this.in.readLine());
-                            if (!messageWithFileName.getResponse().equals("fileNotFound")) {
-                                if (messageWithFileName.getResponse().equals("onQueue"))
-                                    System.out.println("Download em espera, eventualmente vai receber o ficheiro.");
-                                new Thread(() -> {
-                                    DataTransfer dataTransfer = new DataTransfer(socket);
-                                    try {
-                                        BufferedReader tmpIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                                        ResponseMessage tmp = new ResponseMessage(tmpIn.readLine());
-                                        dataTransfer.DownloadFile(addClientPath(tmp.getResponse()));
-                                        notificationListener.showMusicUploadNotification("Download da musica com o ficheiro: " + tmp.getResponse() + " concluido");
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                        notificationListener.showMusicUploadNotification("Falha no download da musica");
-                                    } finally {
-                                        close();
-                                    }
-
-                                }).start();
-                            } else {
-                                System.out.println("Não existe esse id");
-                                close();
-                            }
+                            downloadMusic(idM);
                             break;
                         case "5":
                             connectServer();
@@ -229,6 +205,38 @@ public class Client {
         } catch(IOException ioe) {
             ioe.printStackTrace();
         }
+    }
+
+    private void downloadMusic(int idM) {
+        new Thread(() -> {
+            Client.this.connectServer();
+            Client.this.write(new MP3Download(userID, idM));
+            try {
+                ResponseMessage messageWithFileName = new ResponseMessage(Client.this.in.readLine());
+                if (!messageWithFileName.getResponse().equals("fileNotFound")) {
+                    if (messageWithFileName.getResponse().equals("onQueue"))
+                        System.out.println("Download em espera, eventualmente vai receber o ficheiro.");
+
+                    DataTransfer dataTransfer = new DataTransfer(socket);
+                    try {
+                        dataTransfer.DownloadFile(Client.this.addClientPath(messageWithFileName.getResponse()));
+                        notificationListener.showMusicUploadNotification("Download da musica com o ficheiro: " + messageWithFileName.getResponse() + " concluido");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        notificationListener.showMusicUploadNotification("Falha no download da musica");
+                    } finally {
+                        Client.this.close();
+                    }
+
+
+                } else {
+                    System.out.println("Não existe esse id");
+                    Client.this.close();
+                }
+            } catch (IOException ignored) {
+
+            }
+        }).start();
     }
 
     private void listenForMusicListAndPrintIT() throws IOException{
